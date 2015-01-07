@@ -1,20 +1,32 @@
+import os
+import sys
+import urllib
+
 import mobilepy
 
-class Application(object):
+thisdir = os.path.dirname(os.path.abspath(__file__))
 
-    def run():
+class Application(object):
+    def run(self):
         """
         Start your UI and app run loop here.
         """
-        
-        view = mobilepy.ui.create_main_webview_ui("http://www.kosoftworks.com", self)
+        index = os.path.abspath(os.path.join(thisdir, "files", "www", "index.html"))
+        url = "file://%s" % urllib.quote(index)
+        if not os.path.exists(index):
+            #print sys.path
+            print os.listdir(thisdir)
+            #print os.listdir(os.path.dirname(index))
+            url = "http://www.kosoftworks.com"
+        self.delegate = mobilepy.ui.BaseWebViewDelegate("pe", self)
+        self.webview = mobilepy.ui.NativeWebView(self.delegate)
+        self.webview.load_url(url)
+        self.webview.show()
         return 0
 
-    def webview_should_start_load(self, webview, url, nav_type):
-        return True
-    def webview_did_start_load(self, webview):
-        pass
-    def webview_did_finish_load(self, webview):
-        pass
-    def webview_did_fail_load(self, webview, error_code, error_msg):
-        pass
+    def get_main_window(self):
+        return self.webview
+
+    def search_key_up(self, value):
+        mobilepy.ui.show_alert('search_key_up called with value:' + value)
+        self.webview.evaluate_javascript("$('#search_bar').val('%s');" % value)
