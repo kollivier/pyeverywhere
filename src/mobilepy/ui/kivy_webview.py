@@ -1,3 +1,5 @@
+import logging
+
 import kivy                                                                                                                                                            
 from kivy.lang import Builder                                                                   
 from kivy.utils import platform                                                                 
@@ -7,36 +9,34 @@ from jnius import autoclass, JavaClass, PythonJavaClass, MetaJavaClass, java_met
 from android.runnable import run_on_ui_thread                                                   
 
 WebView = autoclass('android.webkit.WebView')                                                 
-WebViewClient = autoclass('android.webkit.WebViewClient')                                       
+WebViewClient = autoclass('android.webkit.WebViewClient') 
+PythonWebViewClient = autoclass('org.kosoftworks.pyeverywhere.PEWebViewClient')                                      
 activity = autoclass('org.renpy.android.PythonActivity').mActivity
 
-def show_alert(title, message):
-    pass
+def show_alert(title, message=""):
+    logging.info("Alert: %s %s" % (title, message))
 
-class PythonWebViewClient(JavaClass):
-    __metaclass__ = MetaJavaClass
-    __javaclass__ = 'android/webkit/WebViewClient'
-
-    shouldOverrideUrlLoading = JavaMethod('(Landroid/webkit/WebView,Ljava/lang/String;)Z;')
-    onPageFinished = JavaMethod('(Landroid/webkit/WebView,Ljava/lang/String;)V;')
-
-class PEWebViewClient2(PythonWebViewClient):
-    __metaclass__ = MetaJavaClass
-    __javaclass__ = 'android/webkit/WebViewClient'
+class PEWebViewClientInterface(PythonJavaClass):
+    __javainterfaces__ = ['org/kosoftworks/pyeverywhere/WebViewCallbacks']
+    __javacontext__ = 'app'
 
     def __init__(self, delegate):
         self.delegate = delegate
-        super(PEWebViewClient2, self).__init__()
+        self.webview = None
+        super(PEWebViewClientInterface, self).__init__()
 
-    @java_method('(Ljava/lang/object;Ljava/lang/String)Z;')
-    def shouldOverrideUrlLoading(self, view, url):
-        logging.info("shouldOverrideUrlLoading called with url %s" % url)
-        return self.delegate.webview_should_start_load(url)
+    def setWebView(self, webview):
+        self.webview = webview
 
-    @java_method('(Ljava/lang/object;Ljava/lang/String)V;')
-    def onPageFinished(self, view, url):
-        logging.info("onPageFinished called with url %s" % url)
-        self.delegate.webview_did_finish_load(url)                           
+    @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)Z')
+    def shouldLoadURL(self, view, url):
+        logging.debug("shouldOverrideUrlLoading called with url %s" % url)
+        return not self.delegate.webview_should_start_load(self.webview, url, None)
+
+    @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)V')
+    def pageLoadComplete(self, view, url):
+        logging.debug("onPageFinished called with url %s" % url)
+        self.delegate.webview_did_finish_load(self.webview, url)                           
 
 class AndroidWebView(Widget):                                                                               
     def __init__(self, **kwargs):                                                               
@@ -51,6 +51,9 @@ class AndroidWebView(Widget):
         self.url = url
         if self.initialized:
             self.webview.loadUrl(url)
+
+    def evaluate_javascript(self, js):
+        self.webview.evaluateJavascript(js, None)
 
     @run_on_ui_thread                                                                         
     def create_webview(self, *args):                                                            
@@ -67,8 +70,11 @@ class NativeWebView(object):
         self.initialize()
 
     def initialize(self):
-        self.client = PEWebViewClient2(self.delegate)
+        self.callback = PEWebViewClientInterface(self.delegate)
+        self.client = PythonWebViewClient()
+        self.client.setWebViewCallbacks(self.callback)
         self.webview = AndroidWebView(client=self.client)
+        self.callback.setWebView(self.webview)
 
     @run_on_ui_thread
     def show(self):
@@ -80,5 +86,5 @@ class NativeWebView(object):
 
     @run_on_ui_thread
     def evaluate_javascript(self, js):
-        self.webview.webview.evaluateJavascript(js)
+        self.webview.evaluate_javascript(js)
 

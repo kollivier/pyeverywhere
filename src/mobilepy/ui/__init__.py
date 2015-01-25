@@ -1,4 +1,5 @@
 import logging
+import urlparse
 
 class BaseWebViewDelegate(object):
     def __init__(self, protocol, delegate):
@@ -9,9 +10,14 @@ class BaseWebViewDelegate(object):
         if not url.startswith(self.protocol):
             return False
 
+        logging.debug("parsing url: %r" % (url,))
         parts = urlparse.urlparse(url)
         command = "%s(" % parts.netloc
-        if parts.query:
+
+        query = parts.query
+        if not query:
+            query = parts.path
+        if query:
             args = parts.query.split("&")
             for arg in args:
                 pieces = arg.split("=")
@@ -24,6 +30,7 @@ class BaseWebViewDelegate(object):
         command += ")"
 
         command = "self.delegate.%s" % command
+        logging.debug("calling: %s" % command)
         eval(command)
 
         return True
@@ -32,9 +39,9 @@ class BaseWebViewDelegate(object):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
         return not self.parse_message(url)
 
-    def webview_did_start_load(self, webview):
+    def webview_did_start_load(self, webview, url=None):
         pass
-    def webview_did_finish_load(self, webview):
+    def webview_did_finish_load(self, webview, url=None):
         webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
     
     def webview_did_fail_load(self, webview, error_code, error_msg):
