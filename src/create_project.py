@@ -4,7 +4,7 @@ import shutil
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
-project_name = "MobilePy"
+project_name = "PyEverywhere"
 
 parser = argparse.ArgumentParser(description="Create a new %s Project." % project_name)
 parser.add_argument('name', help='Name of project to create')
@@ -32,6 +32,8 @@ if args.name:
     print("Copying native project files, this make take a little while...")
     native_dir = os.path.abspath(os.path.join(thisdir, "..", "native"))
     shutil.copytree(native_dir, os.path.join(root, "native"))
+
+
 
 
 
