@@ -1,5 +1,9 @@
 import logging
+import sys
+import urllib
 import urlparse
+
+platform = None
 
 class BaseWebViewDelegate(object):
     def __init__(self, protocol, delegate):
@@ -22,11 +26,11 @@ class BaseWebViewDelegate(object):
             for arg in args:
                 pieces = arg.split("=")
                 if len(pieces) == 2:
-                    argname = pieces[0]
-                    argvalue = pieces[1]
+                    argname =  ulrlib.unquote(pieces[0]).replace("\\u", "\u").decode('unicode_escape')
+                    argvalue = urllib.unquote(pieces[1]).replace("\\u", "\u").decode('unicode_escape')
                     command += "%s=\"%s\"" % (argname, argvalue)
                 else:
-                    command += "\"%s\"" % arg
+                    command += "u\"%s\"" % urllib.unquote(arg).replace("\\u", "\u").decode('unicode_escape')
         command += ")"
 
         command = "self.delegate.%s" % command
@@ -35,6 +39,9 @@ class BaseWebViewDelegate(object):
 
         return True
     
+    def shutdown(self):
+        self.delegate.shutdown()
+
     def webview_should_start_load(self, webview, url, nav_type):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
         return not self.parse_message(url)
@@ -43,6 +50,7 @@ class BaseWebViewDelegate(object):
         pass
     def webview_did_finish_load(self, webview, url=None):
         webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
+        self.delegate.load_complete()
     
     def webview_did_fail_load(self, webview, error_code, error_msg):
         pass
@@ -50,10 +58,22 @@ class BaseWebViewDelegate(object):
 
 try:
     from pythonista_webview import *
+    platform = 'ios'
 except:
     pass
 
 try:
     from kivy_webview import *
+    platform = 'android'
+
 except:
-    raise
+    pass
+
+try:
+    from wx_webview import *
+    platform = sys.platform
+except Exception, e:
+    pass
+
+if platform == None:
+    raise Exception("PyEverywhere does not currently support this platform.")

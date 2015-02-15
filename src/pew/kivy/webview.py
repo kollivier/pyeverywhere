@@ -1,6 +1,9 @@
 import logging
 
-import kivy                                                                                                                                                            
+import kivy
+
+logging.info("Starting kivy...?")
+
 from kivy.lang import Builder                                                                   
 from kivy.utils import platform                                                                 
 from kivy.uix.widget import Widget                                                              
