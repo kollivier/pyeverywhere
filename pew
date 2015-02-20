@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+
+import argparse
+import json
+import logging
+logging.basicConfig()
+import os
+import shutil
+import sys
+import tempfile
+
+try: 
+    input = raw_input
+except NameError: 
+    pass
+
+thisdir = os.path.dirname(os.path.abspath(__file__))
+srcdir = os.path.join(thisdir, 'src')
+
+android_dir = os.path.join(thisdir, "native", "android")
+
+platforms = [
+    "android",
+    "ios",
+    "mac",
+    "win"
+]
+
+cwd = os.getcwd()
+
+def dir_is_pew(check_dir):
+    return os.path.exists(os.path.join(cwd, "project_info.json"))
+
+def new(args):
+    pass
+
+def run(args):
+    if args.platform in ["mac", "win"]:
+        os.system(sys.executable + " src/wx_main.py")
+
+def load(args):
+    if args.platform == "android":
+
+        cmd = "sh \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), os.path.join(cwd, "dist", "android", "StudyLists-1.0.0-debug.apk"))
+        print("running %s" % cmd)
+        sys.exit(os.system(cmd))
+
+def build(args):
+    print("Building the thing. Args: %r" % args)
+
+    if args.platform == "android":
+        info_file = os.path.join(cwd, "project_info.json")
+
+        if not os.path.exists(info_file):
+            print "Unable to find project info file at %s. Building cannot continue." % info_file
+            sys.exit(1)
+        info_json = json.loads(open(info_file, "rb").read())
+
+        filename = info_json["name"].replace(" ", "")
+
+        cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], os.path.join(os.getcwd(), "src")) 
+        print "Running %s" % cmd
+        result = os.system(cmd)
+
+def update(args):
+    print("Copying latest dependencies into project...")
+
+    tempdir = tempfile.mkdtemp()
+
+    temp_pew = os.path.join(tempdir, 'pew')
+    dest_dir = os.path.join(cwd, 'src', 'pew')
+    if os.path.exists(dest_dir):
+        if input("This will overwrite the existing pew module. Continue? [Y/n]") == "Y":
+            shutil.move(dest_dir, temp_pew)
+
+    try:
+        if not os.path.exists(dest_dir):
+            shutil.copytree(os.path.join(srcdir, 'pew'), dest_dir)
+    except Exception, e:
+        if os.path.exists(temp_pew):
+            shutil.move(temp_pew, dest_dir)
+
+    if os.path.exists(tempdir):
+        try:
+            shutil.rmtree(tempdir)
+        except Exception, e:
+            import traceback
+            logging.error(traceback.format_exc(e))
+
+def main():
+    
+    parser = argparse.ArgumentParser()
+    # parser.add_argument("command", description="", help="Command to run. Acceptable commands are: %r" % commands)
+    commands = parser.add_subparsers(title='commands', help='Commands to operate on PyEverywhere projects')
+
+    build_opt = commands.add_parser('build', help="Build PyEverywhere binary")
+    build_opt.add_argument('platform', help='Platform to build project for. Choices are: %r' % (platforms,))
+    build_opt.set_defaults(func=build)
+
+    new_opt = commands.add_parser('new', help="Create new PyEverywhere project in the current working directory")
+    new_opt.add_argument('name', help='Name of project to create')
+    new_opt.set_defaults(func=new)
+
+    run_opt = commands.add_parser('load', help="Load PyEverywhere project onto a device or emulator")
+    run_opt.add_argument('platform', help='Platform to load the project onto. Choices are: %r' % (platforms,))
+    run_opt.set_defaults(func=load)
+
+    run_opt = commands.add_parser('run', help="Run PyEverywhere project")
+    run_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    run_opt.set_defaults(func=run)
+
+    up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
+    up_opt.set_defaults(func=update)
+
+    args = parser.parse_args()
+    print("Args func = %r" % (args.func,))
+    args.func(args)
+
+if __name__ == "__main__":
+    main()
