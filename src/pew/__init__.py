@@ -3,6 +3,7 @@ __version__ = "0.9.1"
 import logging
 import os
 import sys
+import threading
 import urllib
 import urlparse
 
@@ -16,6 +17,7 @@ except:
 
 try:
     from kivy import *
+    import jnius
     platform = 'android'
 except:
     pass
@@ -28,6 +30,21 @@ except Exception, e:
 
 if platform == None:
     raise Exception("PyEverywhere does not currently support this platform.")
+
+class PEWThread(threading.Thread):
+    """
+    PEWThread is a subclass of the Python threading.Thread object that allows it 
+    to work with some native platforms that require additional handling when interacting
+    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer 
+    to that for API documentation.
+    """
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
+        super(PEWThread, self).__init__(group, target, name, args, kwargs)
+
+    def run(self):
+        super(PEWThread, self).run()
+        if platform == "android":
+            jnius.detach()
 
 class BaseWebViewDelegate(object):
     def __init__(self, protocol, delegate):
