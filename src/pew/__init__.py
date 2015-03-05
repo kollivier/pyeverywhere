@@ -75,6 +75,8 @@ class BaseWebViewDelegate(object):
                     command += "%s=\"%s\"" % (argname, argvalue)
                 else:
                     command += "u\"%s\"" % urllib.unquote(arg).replace("\\u", "\u").decode('unicode_escape')
+                command += ","
+            command = command[:-1] # strip the last comma
         command += ")"
 
         command = "self.delegate.%s" % command
