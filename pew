@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 
 import argparse
+import glob
 import json
 import logging
 logging.basicConfig()
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
+
+from distutils.core import setup
 
 try: 
     input = raw_input
@@ -26,7 +30,40 @@ platforms = [
     "win"
 ]
 
+def codesign_mac(path, identity):
+    cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
+
+    cmd.append(path)
+    logging.info("running %s" % " ".join(cmd))
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+    for line in proc.stdout:
+        logging.info(line)
+    for line in proc.stderr:
+        logging.error(line)
+
+    if proc.returncode != 0:
+        logging.error("Code signing failed")
+        print("Unable to codesign %s" % path)
+        sys.exit(1)
+    else:
+        logging.info("Code signing succeeded for %s" % path)
+        cmd = ['codesign', "--verify", "--deep", "--verbose=4", path]
+        logging.info("calling %s" % " ".join(cmd))
+        if subprocess.call(cmd) != 0:
+            print("Code signed application failed validation.")
+            sys.exit(1)
+
+
 cwd = os.getcwd()
+
+info_file = os.path.join(cwd, "project_info.json")
+
+if not os.path.exists(info_file):
+    print "Unable to find project info file at %s. pew cannot continue." % info_file
+    sys.exit(1)
+info_json = json.loads(open(info_file, "rb").read())
 
 def dir_is_pew(check_dir):
     return os.path.exists(os.path.join(cwd, "project_info.json"))
@@ -47,20 +84,78 @@ def load(args):
 
 def build(args):
     print("Building the thing. Args: %r" % args)
-
+    returncode = 0
     if args.platform == "android":
-        info_file = os.path.join(cwd, "project_info.json")
-
-        if not os.path.exists(info_file):
-            print "Unable to find project info file at %s. Building cannot continue." % info_file
-            sys.exit(1)
-        info_json = json.loads(open(info_file, "rb").read())
-
         filename = info_json["name"].replace(" ", "")
 
         cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], os.path.join(os.getcwd(), "src")) 
         print "Running %s" % cmd
-        result = os.system(cmd)
+        returncode = os.system(cmd)
+    elif args.platform in ["mac", "win"]:
+        import py2app
+        plist = {
+            'CFBundleIdentifier': info_json["identifier"],
+        }
+
+        sys.argv = [sys.argv[0], "py2app"]
+
+        packages = []
+
+        if "packages" in info_json:
+            packages.extend(info_json["packages"])
+
+        dist_dir = "dist/%s" % args.platform
+        if not os.path.exists(dist_dir):
+            os.makedirs(dist_dir)
+        py2app_opts = {
+            "dist_dir": dist_dir, 
+            'plist': plist,
+            "packages": packages,
+            "site_packages": True,
+        }
+
+        data_files = [('.', [os.path.join(cwd, "project_info.json")])]
+        for root, dirs, files in os.walk("src/files"):
+            files_in_dir = []
+            for afile in files:
+                if not afile.startswith("."):
+                    files_in_dir.append(os.path.join(root, afile))
+            if len(files_in_dir) > 0:
+                data_files.append((root.replace("src/", ""), files_in_dir))
+
+        print "data_files = %r" % data_files
+        setup(name = info_json["name"],
+          version = info_json["version"],
+          options = {
+                     'py2app': py2app_opts,
+                    },
+          app = ['src/wx_main.py'],
+          data_files = data_files
+        )
+
+        if sys.platform.startswith("darwin") and "codesign" in info_json:
+            base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
+            print "base_path = %r" % base_path
+            # remove the .py files and the .pyo files as we shouldn't use them
+            # running a .py file in the bundle can modify it.
+            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources", "lib", "python2.7")):
+                for afile in files:
+                    fullpath = os.path.join(root, afile)
+                    ext = os.path.splitext(fullpath)[1]
+                    if ext in ['.py', '.pyo']:
+                        os.remove(fullpath)
+
+            sign_paths = []
+            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
+            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
+            exes = ["Python"]
+            for exe in exes:
+                sign_paths.append(os.path.join(base_path, 'Contents', 'MacOS', exe))
+            sign_paths.append(base_path) # the main app needs to be signed last
+            for path in sign_paths:
+                codesign_mac(path, info_json["codesign"]["osx"]["identity"])
+
+    return returncode
 
 def update(args):
     print("Copying latest dependencies into project...")
@@ -114,7 +209,7 @@ def main():
 
     args = parser.parse_args()
     print("Args func = %r" % (args.func,))
-    args.func(args)
+    sys.exit(args.func(args))
 
 if __name__ == "__main__":
     main()
