@@ -1,5 +1,6 @@
 import logging
 
+import jnius
 import kivy
 
 logging.info("Starting kivy...?")
@@ -18,6 +19,20 @@ activity = autoclass('org.renpy.android.PythonActivity').mActivity
 
 def show_alert(title, message=""):
     logging.info("Alert: %s %s" % (title, message))
+
+class PEWThread(threading.Thread):
+    """
+    PEWThread is a subclass of the Python threading.Thread object that allows it 
+    to work with some native platforms that require additional handling when interacting
+    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer 
+    to that for API documentation.
+    """
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
+        super(PEWThread, self).__init__(group, target, name, args, kwargs)
+
+    def run(self):
+        super(PEWThread, self).run()
+        jnius.detach()
 
 class PEWebViewClientInterface(PythonJavaClass):
     __javainterfaces__ = ['org/kosoftworks/pyeverywhere/WebViewCallbacks']
@@ -68,7 +83,7 @@ class AndroidWebView(Widget):
         self.load_url(self.url)
 
 class NativeWebView(object):
-    def __init__(self, delegate):
+    def __init__(self, delegate, name="WebView"):
         self.delegate = delegate
         self.initialize()
 

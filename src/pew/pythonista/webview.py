@@ -1,5 +1,4 @@
-import os
-import urlparse
+import logging
 
 import console
 import ui
@@ -8,10 +7,29 @@ import ui
 def show_alert(title, message=""):
     console.alert(title, message)
 
+class PEWThread(object):
+    """
+    PEWThread is a subclass of the Python threading.Thread object that allows it 
+    to work with some native platforms that require additional handling when interacting
+    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer 
+    to that for API documentation.
+    """
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
+        self.target = target
+        self.args = args
+        self.kwargs = kwargs
+
+    def start(self):
+        self.run()
+
+    @ui.in_background
+    def run(self):
+        self.target(*self.args, **self.kwargs)
+
 class NativeWebView(object):
-    def __init__(self, delegate):
+    def __init__(self, delegate, name="WebView"):
         self.view = ui.View()                                      # [1]
-        self.view.name = 'WebView'                                    # [2]
+        self.view.name = name                                    # [2]
         self.view.background_color = 'white'                       # [3]
         self.webview = ui.WebView()
         self.delegate = delegate
@@ -36,7 +54,6 @@ class NativeWebView(object):
         return self.delegate.webview_did_start_load(self)
 
     def webview_did_finish_load(self, webview):
-        show_alert('finish load called')
         return self.delegate.webview_did_finish_load(self)
     
     def webview_did_fail_load(self, webview, error_code, error_msg):

@@ -2,12 +2,15 @@ import wx
 import wx.webkit
 
 import logging
+import threading
 
 logging.info("Initializing WebView?")
 
+PEWThread = threading.Thread
+
 class NativeWebView(object):
-    def __init__(self, delegate):
-        self.view = wx.Frame(None, -1, "WebView", size=(700, 500))
+    def __init__(self, delegate, name="WebView"):
+        self.view = wx.Frame(None, -1, name, size=(700, 500))
         self.webview = wx.webkit.WebKitCtrl(self.view, -1)
         self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
         self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)

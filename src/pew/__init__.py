@@ -24,27 +24,18 @@ except:
 
 try:
     from wxpy import *
-    platform = sys.platform
+    # Match the platform names used for pew commands for consistency
+    if sys.platform == "darwin":
+        platform = "mac"
+    elif sys.platform.startswith("win"):
+        platform = "win"
+    else:
+        platform = sys.platform
 except Exception, e:
     pass
 
 if platform == None:
     raise Exception("PyEverywhere does not currently support this platform.")
-
-class PEWThread(threading.Thread):
-    """
-    PEWThread is a subclass of the Python threading.Thread object that allows it 
-    to work with some native platforms that require additional handling when interacting
-    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer 
-    to that for API documentation.
-    """
-    def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
-        super(PEWThread, self).__init__(group, target, name, args, kwargs)
-
-    def run(self):
-        super(PEWThread, self).run()
-        if platform == "android":
-            jnius.detach()
 
 class BaseWebViewDelegate(object):
     def __init__(self, protocol, delegate):
@@ -102,14 +93,33 @@ class BaseWebViewDelegate(object):
     def webview_did_fail_load(self, webview, error_code, error_msg):
         pass
 
-def get_user_path():
+def get_user_dir():
+    return os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
+
+def get_user_path(app_name="python"):
     """ Return the folder to where user data can be stored """
     global platform
-    root = os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
+    root = get_user_dir()
     if platform != "ios":
-        return os.path.join(root, ".python")
+        return os.path.join(root, ".%s" % app_name.replace(" ", "_").lower())
     else:
         # iOS does not seems to allow for sub-folder creation?
         # Documents seems to the the place to put it
         # https://groups.google.com/forum/#!topic/kivy-users/sQXAOecthmE
         return os.path.join(root, "Documents")
+
+def get_app_files_dir(app_name="python"):
+    global platform
+
+    if platform == "mac":
+        return os.path.join(get_user_dir(), "Library", "Application Support", app_name)
+    elif platform == "win":
+        app_files_dir = os.getenv('APPDATA')
+        if app_files_dir is not None and os.path.exists(app_files_dir):
+            return app_files_dir
+        else:
+            return os.path.join(get_user_dir(), "Application Data")
+
+    # iOS and Android store documents inside their own special folders, 
+    # so the directory is already app-specific
+    return get_user_path(app_name)
