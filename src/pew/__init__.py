@@ -52,18 +52,29 @@ def get_app_name():
     global app_name
     return app_name
 
+class PEWTimeoutError(Exception):
+    pass
+
 class PEWTestCase(unittest.TestCase):
     def setUp(self):
         self.app = get_app()
         self.webview = self.app.get_main_window()
 
-    def wait(self, seconds=1):
-        time.sleep(seconds)
+    def waitForResponse(self, timeout=10):
+        time_waited = 0
+        sleep_time = 0.05
+        while time_waited < timeout:
+            time_waited += sleep_time
+            time.sleep(sleep_time)
+            if self.webview.message_received:
+                break
 
-    def pressElement(self, elementID):
-        self.webview.evaluate_javascript("$(\"#%s\").trigger('click')" % elementID)
+    def simulatePress(self, elementID):
+        self.webview.clear_message_received_flag()
+        self.webview.evaluate_javascript("$(\"%s\").simulate('click')" % elementID)
 
-    def setTextForInput(self, id, text):
+    def simulateTextInput(self, id, text):
+        self.webview.clear_message_received_flag()
         self.webview.evaluate_javascript("$(\"#%s\").val('%s')" % (id, text))
 
 class WebUIView(NativeWebView):
@@ -75,21 +86,27 @@ class WebUIView(NativeWebView):
 
         self.page_loaded = False
         self.js_value = None
+        self.message_received = False
 
         self.load_url(url)
     
     def wait_for_js_value(self, timeout=1):
         total_time = 0
         sleep_time = 0.05
-        while self.js_value is None and total_time <= timeout:
+        while self.js_value is None:
             total_time += sleep_time
             time.sleep(sleep_time)
+            if total_time > timeout:
+                raise PEWTimeoutError()
 
         value = copy.copy(self.js_value)
         self.js_value = None
         return value
 
-    def get_value_from_js(self, property, timeout=1):
+    def get_value_from_js(self, value):
+        self.js_value = value.replace("%", "%%")
+
+    def get_js_value(self, property, timeout=1):
         """
         Javascript in many browsers runs asynchronously and cannot directly return a value, but
         sometimes an app cannot proceed until a value is retrieved, e.g. tests, so this method
@@ -98,8 +115,14 @@ class WebUIView(NativeWebView):
         This method causes the app to sleep and should be avoided for any time-sensitive operation.
 
         """
-        self.evaluate_javascript("bridge.getHTMLValue('%s');" % property)
+        self.evaluate_javascript("bridge.getJSValue('%s');" % property)
         return self.wait_for_js_value(timeout)
+
+    def clear_message_received_flag(self):
+        """
+        This is mostly used for unit testing, so that we can wait on an async response after triggering a UI action.
+        """
+        self.message_received = False
 
     def parse_message(self, url):
         if not url.startswith(self.protocol):
@@ -120,22 +143,23 @@ class WebUIView(NativeWebView):
             for arg in args:
                 pieces = arg.split("=")
                 if len(pieces) == 2:
-                    argname =  ulrlib.unquote(pieces[0]).replace("\\u", "\u").decode('unicode_escape')
-                    argvalue = urllib.unquote(pieces[1]).replace("\\u", "\u").decode('unicode_escape')
+                    argname =  ulrlib.unquote(pieces[0]).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
+                    argvalue = urllib.unquote(pieces[1]).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
                     command += "%s=\"%s\"" % (argname, argvalue)
                 else:
-                    command += "u\"%s\"" % urllib.unquote(arg).replace("\\u", "\u").decode('unicode_escape')
+                    command += "u\"%s\"" % urllib.unquote(arg).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
                 command += ","
             command = command[:-1] # strip the last comma
         command += ")"
         
-        if message.startswith("get_value_from_js"):
+        if command.startswith("get_value_from_js"):
             command = "self.%s" % command
         else:
             command = "self.delegate.%s" % command
         logging.debug("calling: %r" % command)
         eval(command)
 
+        self.message_received = True
         return True
     
     def shutdown(self):
