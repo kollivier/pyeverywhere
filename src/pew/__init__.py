@@ -1,9 +1,12 @@
 __version__ = "0.9.1"
 
+import copy
 import logging
 import os
 import sys
 import threading
+import time
+import unittest
 import urllib
 import urlparse
 
@@ -19,8 +22,10 @@ try:
     from kivy import *
     import jnius
     platform = 'android'
-except:
-    pass
+except Exception, e:
+    import traceback
+    logging.warning("Failure when loading kivy")
+    logging.warning(traceback.format_exc(e))
 
 try:
     from wxpy import *
@@ -37,11 +42,65 @@ except Exception, e:
 if platform == None:
     raise Exception("PyEverywhere does not currently support this platform.")
 
-class BaseWebViewDelegate(object):
-    def __init__(self, protocol, delegate):
+app_name = "python"
+
+def set_app_name(name):
+    global app_name
+    app_name = name
+
+def get_app_name():
+    global app_name
+    return app_name
+
+class PEWTestCase(unittest.TestCase):
+    def setUp(self):
+        self.app = get_app()
+        self.webview = self.app.get_main_window()
+
+    def wait(self, seconds=1):
+        time.sleep(seconds)
+
+    def pressElement(self, elementID):
+        self.webview.evaluate_javascript("$(\"#%s\").trigger('click')" % elementID)
+
+    def setTextForInput(self, id, text):
+        self.webview.evaluate_javascript("$(\"#%s\").val('%s')" % (id, text))
+
+class WebUIView(NativeWebView):
+    def __init__(self, name, url, protocol, delegate):
+        super(WebUIView, self).__init__(name)
+
         self.protocol = protocol
         self.delegate = delegate
+
+        self.page_loaded = False
+        self.js_value = None
+
+        self.load_url(url)
     
+    def wait_for_js_value(self, timeout=1):
+        total_time = 0
+        sleep_time = 0.05
+        while self.js_value is None and total_time <= timeout:
+            total_time += sleep_time
+            time.sleep(sleep_time)
+
+        value = copy.copy(self.js_value)
+        self.js_value = None
+        return value
+
+    def get_value_from_js(self, property, timeout=1):
+        """
+        Javascript in many browsers runs asynchronously and cannot directly return a value, but
+        sometimes an app cannot proceed until a value is retrieved, e.g. tests, so this method
+
+ 
+        This method causes the app to sleep and should be avoided for any time-sensitive operation.
+
+        """
+        self.evaluate_javascript("bridge.getHTMLValue('%s');" % property)
+        return self.wait_for_js_value(timeout)
+
     def parse_message(self, url):
         if not url.startswith(self.protocol):
             return False
@@ -69,8 +128,11 @@ class BaseWebViewDelegate(object):
                 command += ","
             command = command[:-1] # strip the last comma
         command += ")"
-
-        command = "self.delegate.%s" % command
+        
+        if message.startswith("get_value_from_js"):
+            command = "self.%s" % command
+        else:
+            command = "self.delegate.%s" % command
         logging.debug("calling: %r" % command)
         eval(command)
 
@@ -87,11 +149,12 @@ class BaseWebViewDelegate(object):
         pass
     def webview_did_finish_load(self, webview, url=None):
         if url is None or url.startswith("file://") and "index.html" in url:
+            self.page_loaded = True
             webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
             self.delegate.load_complete()
     
     def webview_did_fail_load(self, webview, error_code, error_msg):
-        pass
+        self.page_loaded = True # make sure we don't wait forever if the page fails to load
 
 def get_user_dir():
     return os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
@@ -108,8 +171,9 @@ def get_user_path(app_name="python"):
         # https://groups.google.com/forum/#!topic/kivy-users/sQXAOecthmE
         return os.path.join(root, "Documents")
 
-def get_app_files_dir(app_name="python"):
+def get_app_files_dir():
     global platform
+    global app_name
 
     if platform == "mac":
         return os.path.join(get_user_dir(), "Library", "Application Support", app_name)

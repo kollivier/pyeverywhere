@@ -1,4 +1,6 @@
+import atexit
 import logging
+import threading
 
 import jnius
 import kivy
@@ -31,7 +33,17 @@ class PEWThread(threading.Thread):
         super(PEWThread, self).__init__(group, target, name, args, kwargs)
 
     def run(self):
-        super(PEWThread, self).run()
+        try:
+            super(PEWThread, self).run()
+        except Exception, e:
+            import traceback
+            logging.error("Error occurred in %r thread. Error details:" % self.target)
+            logging.error(traceback.format_exc(e))
+        finally:
+            self.clean_up()
+
+    @atexit.register
+    def clean_up(self):
         jnius.detach()
 
 class PEWebViewClientInterface(PythonJavaClass):
@@ -83,12 +95,11 @@ class AndroidWebView(Widget):
         self.load_url(self.url)
 
 class NativeWebView(object):
-    def __init__(self, delegate, name="WebView"):
-        self.delegate = delegate
+    def __init__(self, name="WebView"):
         self.initialize()
 
     def initialize(self):
-        self.callback = PEWebViewClientInterface(self.delegate)
+        self.callback = PEWebViewClientInterface(self)
         self.client = PythonWebViewClient()
         self.client.setWebViewCallbacks(self.callback)
         self.webview = AndroidWebView(client=self.client)

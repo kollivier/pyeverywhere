@@ -9,12 +9,11 @@ logging.info("Initializing WebView?")
 PEWThread = threading.Thread
 
 class NativeWebView(object):
-    def __init__(self, delegate, name="WebView"):
+    def __init__(self, name="WebView"):
         self.view = wx.Frame(None, -1, name, size=(700, 500))
         self.webview = wx.webkit.WebKitCtrl(self.view, -1)
         self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
         self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
-        self.delegate = delegate
 
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -30,13 +29,13 @@ class NativeWebView(object):
         wx.CallAfter(self.webview.RunScript, js)
 
     def OnClose(self, event):
-        self.delegate.shutdown()
+        self.shutdown()
         event.Skip()
 
     def OnBeforeLoad(self, event):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
-        return self.delegate.webview_should_start_load(self, event.URL, None)
+        return self.webview_should_start_load(self, event.URL, None)
 
     def OnLoadStateChanged(self, event):
         if event.GetState() == wx.webkit.WEBKIT_STATE_STOP:
-            return self.delegate.webview_did_finish_load(self)
+            return self.webview_did_finish_load(self)

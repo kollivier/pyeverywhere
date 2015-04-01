@@ -6,6 +6,7 @@ import json
 import logging
 logging.basicConfig()
 import os
+import plistlib
 import shutil
 import subprocess
 import sys
@@ -71,26 +72,50 @@ def dir_is_pew(check_dir):
 def new(args):
     pass
 
+def test(args):
+    os.system(sys.executable + " src/main.py --test")
+
 def run(args):
-    if args.platform in ["mac", "win"]:
-        os.system(sys.executable + " src/wx_main.py")
-
-def load(args):
     if args.platform == "android":
-
-        cmd = "sh \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), os.path.join(cwd, "dist", "android", "StudyLists-1.0.0-debug.apk"))
+        apk_name = "%s-%s-debug.apk" % (info_json["name"].replace(" ", ""), info_json["version"])
+        cmd = "sh \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), os.path.join(cwd, "dist", "android", apk_name), info_json["identifier"])
         print("running %s" % cmd)
         sys.exit(os.system(cmd))
+    else:
+        os.system(sys.executable + " src/main.py")
 
 def build(args):
     print("Building the thing. Args: %r" % args)
     returncode = 0
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
+        src_dir = os.path.join(cwd, "src")
+        build_dir = os.path.join(cwd, "build", "android")
 
-        cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], os.path.join(os.getcwd(), "src")) 
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
+
+        parent_dir = os.path.dirname(build_dir)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+
+        shutil.copytree(src_dir, build_dir)
+        shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
+
+        cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir) 
         print "Running %s" % cmd
         returncode = os.system(cmd)
+    if args.platform == "ios":
+        plist_file = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate", "Info.plist")
+        if os.path.exists(plist_file):
+            plist = plistlib.readPlist(plist_file)
+            plist['CFBundleIdentifier'] = info_json["identifier"]
+            plist['CFBundleName'] = plist['CFBundleDisplayName'] = info_json["name"]
+            plist['CFBundleVersion'] = info_json["version"]
+            plistlib.writePlist(plist, plist_file)
+
+        ['xcodebuild', '-configuration', 'Debug', '-target', 'PythonistaProject']
+
     elif args.platform in ["mac", "win"]:
         import py2app
         plist = {
@@ -129,7 +154,7 @@ def build(args):
           options = {
                      'py2app': py2app_opts,
                     },
-          app = ['src/wx_main.py'],
+          app = ['src/main.py'],
           data_files = data_files
         )
 
@@ -196,13 +221,13 @@ def main():
     new_opt.add_argument('name', help='Name of project to create')
     new_opt.set_defaults(func=new)
 
-    run_opt = commands.add_parser('load', help="Load PyEverywhere project onto a device or emulator")
-    run_opt.add_argument('platform', help='Platform to load the project onto. Choices are: %r' % (platforms,))
-    run_opt.set_defaults(func=load)
-
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")
     run_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
     run_opt.set_defaults(func=run)
+
+    test_opt = commands.add_parser('test', help="Run PyEverywhere project")
+    test_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    test_opt.set_defaults(func=test)
 
     up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
     up_opt.set_defaults(func=update)

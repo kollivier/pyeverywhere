@@ -27,12 +27,11 @@ class PEWThread(object):
         self.target(*self.args, **self.kwargs)
 
 class NativeWebView(object):
-    def __init__(self, delegate, name="WebView"):
+    def __init__(self, name="WebView"):
         self.view = ui.View()                                      # [1]
         self.view.name = name                                    # [2]
         self.view.background_color = 'white'                       # [3]
         self.webview = ui.WebView()
-        self.delegate = delegate
         self.webview.delegate = self
         self.webview.flex = 'WH'
         self.view.add_subview(self.webview)                              # [8]
@@ -48,13 +47,13 @@ class NativeWebView(object):
 
     def webview_should_start_load(self, webview, url, nav_type):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
-        return self.delegate.webview_should_start_load(self, url, nav_type)
+        return self.webview_should_start_load(self, url, nav_type)
 
     def webview_did_start_load(self, webview):
-        return self.delegate.webview_did_start_load(self)
+        return self.webview_did_start_load(self)
 
     def webview_did_finish_load(self, webview):
-        return self.delegate.webview_did_finish_load(self)
+        return self.webview_did_finish_load(self)
     
     def webview_did_fail_load(self, webview, error_code, error_msg):
-        return self.delegate.webview_did_fail_load(self, error_code, error_msg)
+        return self.webview_did_fail_load(self, error_code, error_msg)
