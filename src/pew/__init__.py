@@ -13,14 +13,17 @@ import urlparse
 platform = None
 
 try:
+    import console
+    import ui
     from pythonista import *
     platform = 'ios'
 except:
     pass
 
 try:
-    from kivy import *
+    import kivy
     import jnius
+    from kivy_pew import *
     platform = 'android'
 except Exception, e:
     import traceback
@@ -141,13 +144,14 @@ class WebUIView(NativeWebView):
         if query:
             args = query.split("&")
             for arg in args:
+                arg = urllib.unquote(arg).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
                 pieces = arg.split("=")
                 if len(pieces) == 2:
-                    argname =  ulrlib.unquote(pieces[0]).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
-                    argvalue = urllib.unquote(pieces[1]).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
-                    command += "%s=\"%s\"" % (argname, argvalue)
+                    command += "%s=u\"%s\"" % (pieces[0], pieces[1])
                 else:
-                    command += "u\"%s\"" % urllib.unquote(arg).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
+                    if arg == "empty_string":
+                        arg = ""
+                    command += "u\"%s\"" % arg
                 command += ","
             command = command[:-1] # strip the last comma
         command += ")"
