@@ -106,6 +106,15 @@ class WebUIView(NativeWebView):
         self.js_value = None
         return value
 
+    def call_js_function(self, function_name, *a):
+        args = []
+        for arg in a:
+            args.append("'%s'" % arg.replace("'", "\\'").encode("utf-8"))
+
+        js = "%s(%s);" % (function_name, ','.join(args))
+
+        self.evaluate_javascript(js)
+
     def get_value_from_js(self, value):
         self.js_value = value.replace("%", "%%")
 
