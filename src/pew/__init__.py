@@ -8,6 +8,7 @@ import threading
 import time
 import unittest
 import urllib
+import urllib2
 import urlparse
 
 platform = None
@@ -106,6 +107,15 @@ class WebUIView(NativeWebView):
         self.js_value = None
         return value
 
+    def call_js_function(self, function_name, *a):
+        args = []
+        for arg in a:
+            args.append("'%s'" % arg.replace("'", "\\'").encode("utf-8"))
+
+        js = "%s(%s);" % (function_name, ','.join(args))
+
+        self.evaluate_javascript(js)
+
     def get_value_from_js(self, value):
         self.js_value = value.replace("%", "%%")
 
@@ -133,7 +143,7 @@ class WebUIView(NativeWebView):
 
         logging.debug("parsing url: %r" % (url,))
         parts = urlparse.urlparse(url)
-        command = "%s(" % parts.netloc
+        command = u"%s(" % parts.netloc
 
         query = parts.query
         if not query:
@@ -144,14 +154,18 @@ class WebUIView(NativeWebView):
         if query:
             args = query.split("&")
             for arg in args:
-                arg = urllib.unquote(arg).replace("\\", "\\\\").replace("\\u", "\u").decode('unicode_escape')
+                arg = urllib2.unquote(arg.encode('ascii'))
+                print("arg = %s" % arg.decode('utf-8'))
+                #arg = arg.replace("\\", "\\\\")
+                #arg = arg.replace("\\u", "\u")
+                arg = arg.decode('utf-8')
                 pieces = arg.split("=")
                 if len(pieces) == 2:
-                    command += "%s=u\"%s\"" % (pieces[0], pieces[1])
+                    command += u"%s=u\"%s\"" % (pieces[0], pieces[1])
                 else:
                     if arg == "empty_string":
                         arg = ""
-                    command += "u\"%s\"" % arg
+                    command += u"u\"%s\"" % arg
                 command += ","
             command = command[:-1] # strip the last comma
         command += ")"
@@ -160,7 +174,7 @@ class WebUIView(NativeWebView):
             command = "self.%s" % command
         else:
             command = "self.delegate.%s" % command
-        logging.debug("calling: %r" % command)
+        logging.debug("calling: %s" % command)
         eval(command)
 
         self.message_received = True
