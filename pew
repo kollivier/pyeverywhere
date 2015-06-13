@@ -14,9 +14,11 @@ import tempfile
 
 from distutils.core import setup
 
-try: 
+import pewtools
+
+try:
     input = raw_input
-except NameError: 
+except NameError:
     pass
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +32,7 @@ platforms = [
     "mac",
     "win"
 ]
+
 
 def codesign_mac(path, identity):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
@@ -112,6 +115,7 @@ def build(args):
             plist['CFBundleIdentifier'] = info_json["identifier"]
             plist['CFBundleName'] = plist['CFBundleDisplayName'] = info_json["name"]
             plist['CFBundleVersion'] = info_json["version"]
+            plist['CFBundleShortVersionString'] = info_json["version"]
             plistlib.writePlist(plist, plist_file)
 
         ['xcodebuild', '-configuration', 'Debug', '-target', 'PythonistaProject']
@@ -149,14 +153,14 @@ def build(args):
                 data_files.append((root.replace("src/", ""), files_in_dir))
 
         print "data_files = %r" % data_files
-        setup(name = info_json["name"],
-          version = info_json["version"],
-          options = {
-                     'py2app': py2app_opts,
-                    },
-          app = ['src/main.py'],
-          data_files = data_files
-        )
+        setup(name=info_json["name"],
+              version=info_json["version"],
+              options={
+                  'py2app': py2app_opts,
+              },
+              app=['src/main.py'],
+              data_files=data_files
+            )
 
         if sys.platform.startswith("darwin") and "codesign" in info_json:
             base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
@@ -186,6 +190,8 @@ def update(args):
     print("Copying latest dependencies into project...")
 
     tempdir = tempfile.mkdtemp()
+
+    pewtools.get_dependencies_for_platform(args.platform)
 
     temp_pew = os.path.join(tempdir, 'pew')
     dest_dir = os.path.join(cwd, 'src', 'pew')
@@ -230,6 +236,7 @@ def main():
     test_opt.set_defaults(func=test)
 
     up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
+    up_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=update)
 
     args = parser.parse_args()
