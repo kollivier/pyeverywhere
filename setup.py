@@ -10,5 +10,6 @@ setup(
     scripts=['pew'],
     package_dir={'': 'src'},
     packages=['pew', 'pewtools'],
+    setup_requires=['requests']
     # test_suite = 'your.module.tests',
 )
