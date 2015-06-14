@@ -1,0 +1,7 @@
+PyPubSub==3.3.0rc1
+coverage==3.7.1
+py2app==0.7.3
+requests==2.3.0
+requests-oauthlib==0.5.0
+wxPython==2.9.5.0
+wxPython-common==2.9.5.0
