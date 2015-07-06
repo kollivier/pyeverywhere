@@ -18,6 +18,9 @@ class PEWApp(App):
         logging.info("starting app...")
         return self.get_main_window().webview
 
+    def shutdown(self):
+        pass  # I don't think this is supported natively with Kivy
+
     def on_pause(self):
         # Here you can save data if needed
         return True                                                                        

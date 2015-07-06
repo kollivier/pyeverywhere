@@ -14,6 +14,9 @@ class PEWApp(wx.App):
         self.setUp()
         return True
 
+    def shutdown(self):
+        self.ExitMainLoop()
+
     def run(self):
         self.MainLoop()
 
