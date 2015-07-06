@@ -25,7 +25,6 @@ class NativeWebView(object):
 
     def evaluate_javascript(self, js):
         js = js.encode('utf8');
-        logging.info("Running %s" % js)
         wx.CallAfter(self.webview.RunScript, js)
 
     def OnClose(self, event):
