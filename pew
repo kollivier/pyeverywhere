@@ -76,7 +76,10 @@ def new(args):
     pass
 
 def test(args):
-    os.system(sys.executable + " src/main.py --test")
+    cmd = sys.executable + " src/main.py --test"
+    if args.no_functional:
+        cmd += " --no-functional"
+    sys.exit(os.system(cmd))
 
 def run(args):
     if args.platform == "android":
@@ -233,6 +236,7 @@ def main():
 
     test_opt = commands.add_parser('test', help="Run PyEverywhere project")
     test_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    test_opt.add_argument('--no-functional', action='store_true', help='Only run unit tests, do not start the GUI and run functional tests.')
     test_opt.set_defaults(func=test)
 
     up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
