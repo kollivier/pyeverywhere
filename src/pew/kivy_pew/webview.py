@@ -88,7 +88,10 @@ class AndroidWebView(Widget):
     @run_on_ui_thread                                                                         
     def create_webview(self, *args):                                                            
         self.webview = WebView(activity)                                                             
-        self.webview.getSettings().setJavaScriptEnabled(True)                                                                                                                                                                
+        settings = self.webview.getSettings()
+        settings.setJavaScriptEnabled(True)
+        settings.setAllowFileAccessFromFileURLs(True)
+        settings.setAllowUniversalAccessFromFileURLs(True)
         activity.setContentView(self.webview)             
         self.webview.setWebViewClient(self.client)
         self.initialized = True
