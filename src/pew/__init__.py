@@ -1,6 +1,7 @@
 __version__ = "0.9.1"
 
 import copy
+import json
 import logging
 import os
 import sys
@@ -143,14 +144,21 @@ class WebUIView(NativeWebView):
 
         logging.debug("parsing url: %r" % (url,))
         parts = urlparse.urlparse(url)
-        command = u"%s(" % parts.netloc
-
         query = parts.query
-        if not query:
-            # On Android at least, Python puts the ?whatever part in path rather than query
-            query = parts.path
-            if query and len(query) > 0 and query[0] == "?":
-                query = query[1:]
+        
+        # On Android at least, Python puts the ?whatever part in path rather than query
+        path = parts.path.split("?")
+        if len(path) == 2 and not query:
+            query = path[1]
+            path = path[0]
+        
+        func_name = parts.netloc
+        if path != "":
+            func_name += parts.path.replace("/", ".")
+        command = u"%s" % func_name
+
+        func_args = []
+        func_kwargs = {}
         if query:
             args = query.split("&")
             for arg in args:
@@ -159,23 +167,36 @@ class WebUIView(NativeWebView):
                 #arg = arg.replace("\\", "\\\\")
                 #arg = arg.replace("\\u", "\u")
                 arg = arg.decode('utf-8')
+                name = None
+                value = None
                 pieces = arg.split("=")
                 if len(pieces) == 2:
-                    command += u"%s=u\"%s\"" % (pieces[0], pieces[1])
+                    name = pieces[0]
+                    value = pieces[1]
                 else:
-                    if arg == "empty_string":
-                        arg = ""
-                    command += u"u\"%s\"" % arg
-                command += ","
-            command = command[:-1] # strip the last comma
-        command += ")"
+                    value = pieces[0]
+                if value == "empty_string":
+                    value = ""
+                    
+                try:
+                    value = json.loads(value)
+                except:
+                    pass
+                
+                if name is not None:
+                    func_kwargs[name] = value
+                else:
+                    func_args.append(value)
         
-        if command.startswith("get_value_from_js"):
-            command = "self.%s" % command
+        if func_name.startswith("get_value_from_js"):
+            command = "self.%s" % func_name
         else:
-            command = "self.delegate.%s" % command
+            command = "self.delegate.%s" % func_name
+            
+        function = eval(command)
+        function(*func_args, **func_kwargs)
         logging.debug("calling: %s" % command)
-        eval(command)
+        #eval(command)
 
         self.message_received = True
         return True
