@@ -119,6 +119,11 @@ def build(args):
             plist['CFBundleName'] = plist['CFBundleDisplayName'] = info_json["name"]
             plist['CFBundleVersion'] = info_json["version"]
             plist['CFBundleShortVersionString'] = info_json["version"]
+            if "icons" in info_json and "ios" in info_json["icons"]:
+                icons = info_json["icons"]["ios"]
+                if len(icons) > 0:
+                    plist['CFBundleIconFiles'] = icons
+
             plistlib.writePlist(plist, plist_file)
 
         ['xcodebuild', '-configuration', 'Debug', '-target', 'PythonistaProject']
