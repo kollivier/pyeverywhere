@@ -62,18 +62,31 @@ def codesign_mac(path, identity):
 
 cwd = os.getcwd()
 
-info_file = os.path.join(cwd, "project_info.json")
+info_json = {}
 
-if not os.path.exists(info_file):
-    print "Unable to find project info file at %s. pew cannot continue." % info_file
-    sys.exit(1)
-info_json = json.loads(open(info_file, "rb").read())
+info_file = os.path.join(cwd, "project_info.json")
 
 def dir_is_pew(check_dir):
     return os.path.exists(os.path.join(cwd, "project_info.json"))
 
-def new(args):
-    pass
+def create(args):
+    if args.name:
+        safe_name = args.name.replace(" ", "")
+        dir_name = os.path.join(cwd, safe_name)
+        print("Creating project %s in directory %s" % (args.name, dir_name))
+        if os.path.exists(dir_name):
+            print("Project already exists! Please delete or rename the existing project folder and try again.")
+            sys.exit(1)
+
+        shutil.copytree(os.path.join(thisdir, "src", "template"), dir_name)
+        
+        project_json_file = os.path.join(dir_name, "project_info.json")
+        project_json = json.load(open(project_json_file))
+        
+        project_json["name"] = args.name
+        project_json["identifier"] = "com.yourdomain.%s" % safe_name
+        
+        json.dump(project_json, open(project_json_file, 'w'))
 
 def test(args):
     cmd = sys.executable + " src/main.py --test"
@@ -91,7 +104,6 @@ def run(args):
         os.system(sys.executable + " src/main.py")
 
 def build(args):
-    print("Building the thing. Args: %r" % args)
     returncode = 0
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
@@ -112,7 +124,8 @@ def build(args):
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":
-        plist_file = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate", "Info.plist")
+        project_dir = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate") 
+        plist_file = os.path.join(project_dir, "Info.plist")
         if os.path.exists(plist_file):
             plist = plistlib.readPlist(plist_file)
             plist['CFBundleIdentifier'] = info_json["identifier"]
@@ -126,7 +139,8 @@ def build(args):
 
             plistlib.writePlist(plist, plist_file)
 
-        ['xcodebuild', '-configuration', 'Debug', '-target', 'PythonistaProject']
+        project_file = os.path.join(project_dir, "Project.xcodeproj")
+        os.system("open %s" % project_file.replace(" ", "\\ "))
 
     elif args.platform in ["mac", "win"]:
         import py2app
@@ -194,6 +208,12 @@ def build(args):
 
     return returncode
 
+def init(args):
+    """
+    For now, this is just an alias for update.
+    """
+    update(args)
+
 def update(args):
     print("Copying latest dependencies into project...")
 
@@ -231,9 +251,13 @@ def main():
     build_opt.add_argument('platform', help='Platform to build project for. Choices are: %r' % (platforms,))
     build_opt.set_defaults(func=build)
 
-    new_opt = commands.add_parser('new', help="Create new PyEverywhere project in the current working directory")
+    new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
     new_opt.add_argument('name', help='Name of project to create')
-    new_opt.set_defaults(func=new)
+    new_opt.set_defaults(func=create)
+
+    up_opt = commands.add_parser('init', help="Initialize the PyEverywhere dependencies for the project in the current working directory.")
+    up_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.set_defaults(func=init)
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")
     run_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
@@ -249,7 +273,14 @@ def main():
     up_opt.set_defaults(func=update)
 
     args = parser.parse_args()
-    print("Args func = %r" % (args.func,))
+
+    if not args.func == create:
+        if not os.path.exists(info_file):
+            print "Unable to find project info file at %s. pew cannot continue." % info_file
+            sys.exit(1)
+
+        global info_json
+        info_json = json.loads(open(info_file, "rb").read())
     sys.exit(args.func(args))
 
 if __name__ == "__main__":

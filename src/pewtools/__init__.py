@@ -1,5 +1,6 @@
 import hashlib
 import os
+import subprocess
 import sys
 import zipfile
 
@@ -9,22 +10,38 @@ __version__ = "0.9.1"
 
 downloads_root_url = "http://files.pyeverywhere.org"
 
+thisdir = os.path.dirname(os.path.abspath(__file__))
+rootdir = os.path.abspath(os.path.join(thisdir, "..", ".."))
+
+dir_macros = {
+    "PROJECT_DIR": os.getcwd(),
+    "PEW_DIR": rootdir,
+}
+
 pew_deps = {
     "ios": {
         "XCodeTemplate": {
             "url": "%s/pythonista/1.6beta/PythonistaProjectTemplate.zip" % downloads_root_url,
             "dest_dir": "${PROJECT_DIR}/native/ios",
-            "checksum": "c97a709f25bfb2275d911536b498a429"
-        }
-    },
-    "android": {
-        "AndroidSDK": {
-            "url": "",
-            "dest_dir": "${PROJECT_DIR}/native/android",
+            "checksum": "26c1006d726d46c19579b75eaa6af06a"
         }
     }
 }
 
+pew_cmds = {
+    "android": [
+        ["/bin/sh", "${PEW_DIR}/native/android/init.sh"],
+        ["/bin/sh", "${PEW_DIR}/native/android/build_p4a.sh"]
+    ]
+}
+
+
+def resolve_macros(path):
+    output = path
+    for macro_name in dir_macros:
+        output = output.replace("${%s}" % macro_name, dir_macros[macro_name])
+
+    return output
 
 def unzip_file(filename, extract_dir):
     """
@@ -36,7 +53,7 @@ def unzip_file(filename, extract_dir):
         zip.extractall(extract_dir)
         zip.close()
     else:
-        result = os.system("unzip -o -d %s %s" % (extract_dir, filename.replace(" ", "\\ ")))
+        result = os.system("unzip -o %s -d %s" % (filename.replace(" ", "\\ "), extract_dir.replace(" ", "\\ ")))
         if result != 0:
             print("Error unzipping files. Aborting update installation.")
             return
@@ -61,7 +78,9 @@ def get_dependencies_for_platform(platform_name):
             dep = platform_deps[dep_name]
             url = dep["url"]
             basename = url[url.rfind("/")+1:]
-            output_dir = dep["dest_dir"].replace("${PROJECT_DIR}", os.getcwd())
+            output_dir = resolve_macros(dep["dest_dir"])
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
             output_file = os.path.join(output_dir, basename)
             print("output file = %s" % output_file)
             needs_download = True
@@ -85,6 +104,12 @@ def get_dependencies_for_platform(platform_name):
 
             if os.path.splitext(output_file)[1] == ".zip":
                 unzip_file(output_file, output_dir)
-
-    else:
-        print("Could not find any dependencies for %s." % platform_name)
+                
+    if platform_name in pew_cmds:
+        for cmd in pew_cmds[platform_name]:
+            final_cmd = []
+            for arg in cmd:
+                final_cmd.append(resolve_macros(arg))
+                
+            print("Running command %r" % final_cmd)
+            subprocess.check_call(final_cmd)

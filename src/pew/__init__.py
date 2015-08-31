@@ -87,6 +87,8 @@ class WebUIView(NativeWebView):
         super(WebUIView, self).__init__(name)
 
         self.protocol = protocol
+        if not "://" in protocol:
+            self.protocol += "://" 
         self.delegate = delegate
 
         self.page_loaded = False
@@ -192,10 +194,10 @@ class WebUIView(NativeWebView):
             command = "self.%s" % func_name
         else:
             command = "self.delegate.%s" % func_name
-            
+        
+        logging.debug("calling: %s" % command)    
         function = eval(command)
         function(*func_args, **func_kwargs)
-        logging.debug("calling: %s" % command)
         #eval(command)
 
         self.message_received = True
