@@ -336,7 +336,8 @@ def get_app_dir():
     if hasattr(sys, "frozen"):
         return os.path.dirname(sys.executable)
     
-    return os.path.abspath(os.path.dirname(__file__))
+    # we run dirname twice to strip out the "pew" subdirectory.
+    return os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 
 def get_app_files_dir():
     """
