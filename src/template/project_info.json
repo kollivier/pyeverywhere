@@ -1,6 +1,5 @@
 {
     "name": "Sample Project",
     "version": "0.0.1",
-    "identifier": "org.pyeverywhere.SampleProject",
-    "packages": [""]
+    "identifier": "org.pyeverywhere.SampleProject"
 }

@@ -1,13 +1,13 @@
 import json
 import logging
 import os
+import random
 import sys
 import urllib
 
 import pew
 
-parentdir = os.path.join(__file__, "..")
-thisdir = os.path.dirname(os.path.abspath(parentdir))
+thisdir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 json_dir = thisdir
 if json_dir.endswith("src"):
@@ -45,26 +45,45 @@ class Application(pew.PEWApp):
         return self.webview
 
     def make_it_so(self):
-        self.webview.call_js_function("this_just_in", "No one expects the Spanish Inquisition!")
+        phrases = [
+            "No one expects the Spanish Inquisition!",
+            "And now for something completely different.",
+            "No one expects the spammish repitition!",
+            "Our experts describe you as an appallingly dull fellow, unimaginative, timid, lacking in initiative, spineless, easily dominated, no sense of humour, tedious company and irrepressibly drab and awful. And whereas in most professions these would be considerable drawbacks, in chartered accountancy they are a positive boon.",
+            "It's not pining. It's passed on. This parrot is no more. It has ceased to be. It's expired and gone to meet its maker. This is a late parrot. It's a stiff. Bereft of life, it rests in peace. If you hadn't nailed it to the perch, it would be pushing up the daisies. It's rung down the curtain and joined the choir invisible. THIS IS AN EX-PARROT.",
+            "It's just a flesh wound.",
+            "I’m sorry to have kept you waiting, but I’m afraid my walk has become rather sillier recently."
+            "Well you can't expect to wield supreme executive power just because some watery tart threw a sword at you.",
+            "All right... all right... but apart from better sanitation, the medicine, education, wine, public order, irrigation, roads, a fresh water system, and public health ... what have the Romans ever done for us?",
+            "Nudge, nudge, wink, wink. Know what I mean?",
+            "Oh! Come and see the violence inherent in the system! Help, help! I'm being repressed!",
+            "-She turned me into a newt! -A newt? -I got better..."
+        ]
+        
+        self.webview.call_js_function("this_just_in", random.choice(phrases))
 
     def load_complete(self):
+        """
+        Called when the UI is fully loaded and ready to accept JavaScript commands.
+        """
         self.webview.call_js_function("app.ui.setView", "home")
 
         if "--test" in sys.argv or ("PEW_RUN_TESTS" in os.environ and os.environ["PEW_RUN_TESTS"] == "1"):
             self.test_mode = True
-            import testrunner
+            import pew.test
+            
+            test_runner = pew.test.PEWTestRunner()
 
             def testsFinishedCallback(success):
+                """
+                Do any cleanup and reporting here.
+                """
                 if success:
-                    report_file = testrunner.generate_coverage_report()
+                    report_file = test_runner.generate_coverage_report()
                     webbrowser.open("file://" + report_file)
 
                 if not success:
                     logging.error("There were unit test failures, please check the log for details.")
                 self.shutdown()
 
-            testrunner.startTestsThread(testsFinishedCallback)
-
-    def search_key_up(self, value):
-        pew.ui.show_alert('search_key_up called with value:' + value)
-        self.webview.evaluate_javascript("$('#search_bar').val('%s');" % value)
+            test_runner.startTestsThread(testsFinishedCallback)

@@ -7,7 +7,7 @@ app = None
 def get_app():
     return app
 
-class PEWApp(wx.App):
+class NativePEWApp(wx.App):
     def OnInit(self):
         global app
         app = self

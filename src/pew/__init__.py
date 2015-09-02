@@ -1,3 +1,9 @@
+"""
+The PyEverywhere (pew) module acts as a bridge layer between the Python app logic
+and an HTML/CSS/JS-based front end. 
+"""
+
+
 __version__ = "0.9.1"
 
 import copy
@@ -49,41 +55,81 @@ if platform == None:
 
 app_name = "python"
 
+
 def set_app_name(name):
+    """
+    Sets the app name. In addition to being used for name display, it is used
+    when creating app data subdirectories in common locations.
+    """
     global app_name
     app_name = name
 
+
 def get_app_name():
+    """
+    Returns the app name.
+    """
     global app_name
     return app_name
 
+
 class PEWTimeoutError(Exception):
+    """
+    Exception thrown when PEW times out waiting to retrieve a JS value.
+    """
+    
     pass
 
-class PEWTestCase(unittest.TestCase):
+
+class PEWApp(NativePEWApp):
+    """
+    Class for managing the native application. You must create a subclass of 
+    this class, initialize it and call its run method to start the app.
+    """
+    
+    def __init__(self):
+        super(PEWApp, self).__init__()
+    
     def setUp(self):
-        self.app = get_app()
-        self.webview = self.app.get_main_window()
+        """
+        Performs application setup. Your application should override this 
+        method and perform its own setup steps. 
+        
+        It is expected that you will have a visible WebUIView before this method
+        completes. If not, some platforms may shut down the app.
+        """
+        pass
+        
+    def run(self):
+        """
+        Starts the application's main loop.
+        """
+        super(PEWApp, self).run()
+        
+    def shutdown(self):
+        """
+        Runs any shutdown handling code. Your application should override
+        this method if you need to run any custom shutdown code. Be sure
+        to call the base shutdown method as well.
+        """
+        super(PEWApp, self).shutdown()
 
-    def waitForResponse(self, timeout=10):
-        time_waited = 0
-        sleep_time = 0.05
-        while time_waited < timeout:
-            time_waited += sleep_time
-            time.sleep(sleep_time)
-            if self.webview.message_received:
-                break
-
-    def simulatePress(self, elementID):
-        self.webview.clear_message_received_flag()
-        self.webview.evaluate_javascript("$(\"%s\").simulate('click')" % elementID)
-
-    def simulateTextInput(self, id, text):
-        self.webview.clear_message_received_flag()
-        self.webview.evaluate_javascript("$(\"#%s\").val('%s')" % (id, text))
 
 class WebUIView(NativeWebView):
+    """
+    WebUIView is a wrapper around the native platform's embedded web browser 
+    engine. It constructs a native window and fills the entire window with 
+    the contents of the web view.
+    """
     def __init__(self, name, url, protocol, delegate):
+        """
+        Creates a native WebUIView and accompanying UI window.
+        
+        :param name: window name, will show in the titlebar of platforms that have one 
+        :param url: URL of the HTML document containing the app's UI
+        :param protcol: string designating the app protocol to use, e.g. myapp will result in myapp://message messages
+        :param delegate: a Python object that will receive the messages sent from the web UI
+        """
         super(WebUIView, self).__init__(name)
 
         self.protocol = protocol
@@ -97,20 +143,53 @@ class WebUIView(NativeWebView):
 
         self.load_url(url)
     
-    def wait_for_js_value(self, timeout=1):
+    def _wait_for_js_value(self, variable, timeout=1):
+        """
+        Waits for the UI to send back the requested variable. Returns the variable
+        if retrieved before timeout, otherwise throws a PEWTimeoutError.
+        
+        Params:
+            :param variable: variable whose value we are trying to retrieve 
+            :param timeout: time in seconds to wait before timing out
+        """
         total_time = 0
         sleep_time = 0.05
         while self.js_value is None:
             total_time += sleep_time
             time.sleep(sleep_time)
             if total_time > timeout:
-                raise PEWTimeoutError()
+                raise PEWTimeoutError("Timed out attempting to retrieve value for '%s'" % variable)
 
         value = copy.copy(self.js_value)
         self.js_value = None
         return value
 
+    def load_url(self, url):
+        """
+        Loads the document at the specified URL into the app's main web view. Note
+        that this will effectively replace your UI view.
+        
+        Params:
+            :param url: URL to load, if loading a local file be sure to use the file:// protocol
+        """
+        super(WebUIView, self).load_url(url)
+
+    def show(self):
+        """
+        Makes the web view visible on screen. 
+        """
+        super(WebUIView, self).show()
+
     def call_js_function(self, function_name, *a):
+        """
+        Calls a JavaScript function from Python. 
+        
+        :param function_name: name of function to call 
+        :param a: series of arguments to function 
+        
+        Example:
+            webview.call_js_function("show_address_form", "123 Main Street", "Santa Claus", "IN")
+        """
         args = []
         for arg in a:
             args.append("'%s'" % arg.replace("'", "\\'").encode("utf-8"))
@@ -122,25 +201,33 @@ class WebUIView(NativeWebView):
     def get_value_from_js(self, value):
         self.js_value = value.replace("%", "%%")
 
-    def get_js_value(self, property, timeout=1):
+    def get_js_value(self, variable, timeout=1):
         """
+        Gets the value of a property, variable or function in JavaScript. 
+        
         Javascript in many browsers runs asynchronously and cannot directly return a value, but
         sometimes an app cannot proceed until a value is retrieved, e.g. tests, so this method
-
+        sends a message asking for the value and waits until JS sends back the value.
  
         This method causes the app to sleep and should be avoided for any time-sensitive operation.
 
+        :param variable: the property or variable you want the value of 
+        :param timeout: how many seconds to wait before giving up on retrieving the value
         """
-        self.evaluate_javascript("bridge.getJSValue('%s');" % property)
-        return self.wait_for_js_value(timeout)
+        self.evaluate_javascript("bridge.getJSValue('%s');" % variable)
+        return self._wait_for_js_value(variable, timeout)
 
     def clear_message_received_flag(self):
         """
-        This is mostly used for unit testing, so that we can wait on an async response after triggering a UI action.
+        Clears the message received flag. This is mostly used for unit testing, so that we can wait on an async response after triggering a UI action.
         """
         self.message_received = False
 
     def parse_message(self, url):
+        """
+        Processes a message received from the JavaScript bridge and calls the 
+        corresponding Python delegate method. Internal use only.
+        """
         if not url.startswith(self.protocol):
             return False
 
@@ -222,10 +309,15 @@ class WebUIView(NativeWebView):
         self.page_loaded = True # make sure we don't wait forever if the page fails to load
 
 def get_user_dir():
+    """
+    Returns the user's home directory.
+    """
     return os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
 
 def get_user_path(app_name="python"):
-    """ Return the folder to where user data can be stored """
+    """ 
+    Returns the folder where user data can be stored. 
+    """
     global platform
     root = get_user_dir()
     if platform != "ios":
@@ -237,6 +329,9 @@ def get_user_path(app_name="python"):
         return os.path.join(root, "Documents")
 
 def get_app_files_dir():
+    """
+    Returns the location where the application's support files should be stored.
+    """
     global platform
     global app_name
 

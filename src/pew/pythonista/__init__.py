@@ -6,7 +6,7 @@ def get_app():
 
 
 # unlike Android and wx, there is no main App class in Pythonista
-class PEWApp(object):
+class NativePEWApp(object):
     def run(self):
         global app
         app = self

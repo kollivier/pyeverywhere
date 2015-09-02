@@ -10,7 +10,7 @@ app = None
 def get_app():
     return app
 
-class PEWApp(App):                                                                          
+class NativePEWApp(App):                                                                          
     def build(self):
         global app
         app = self
