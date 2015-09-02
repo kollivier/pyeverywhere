@@ -7,8 +7,10 @@ import urllib
 
 import pew
 
-thisdir = os.path.dirname(os.path.abspath(sys.argv[0]))
+thisdir = pew.get_app_dir()
 
+# in source builds, project_info.json is a directory above the sources, but
+# in frozen apps they're all in the same directory.
 json_dir = thisdir
 if json_dir.endswith("src"):
     json_dir = os.path.dirname(json_dir)
