@@ -7,10 +7,13 @@ import urllib
 
 import pew
 
-thisdir = pew.get_app_dir()
+# get the root src directory
+thisdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if pew.platform in ["mac", "win"] and hasattr(sys, "frozen"):
+    thisdir = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 # in source builds, project_info.json is a directory above the sources, but
-# in frozen apps they're all in the same directory.
+# in frozen apps it's in the same directory as all other resources.
 json_dir = thisdir
 if json_dir.endswith("src"):
     json_dir = os.path.dirname(json_dir)
