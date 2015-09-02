@@ -1,4 +1,9 @@
+import os
+import sys
+
 from setuptools import setup
+
+sys.path.insert(0, os.path.abspath('src'))
 import pew
 
 setup(
