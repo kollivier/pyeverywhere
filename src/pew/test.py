@@ -71,7 +71,7 @@ class PEWTestRunner:
     """
     Class for running both functional and unit tests on a PEWApp.
     """
-    def start_coverage_tests():
+    def start_coverage_tests(self):
         """
         Starts code coverage monitoring during the tests.
         """
@@ -79,7 +79,7 @@ class PEWTestRunner:
             figleaf.start(ignore_python_lib=True)
     
     
-    def generate_coverage_report():
+    def generate_coverage_report(self):
         """
         Generates a coverage report in HTML format.
         
@@ -111,7 +111,7 @@ class PEWTestRunner:
         return os.path.join(report_dir, "index.html")
     
     
-    def runTests(allTests=True, callback=None):
+    def runTests(self, allTests=True, callback=None):
         """
         Runs all tests defined in your project's tests/unit directory, along with
         tests/functional if you have set allTests to True.
@@ -149,7 +149,7 @@ class PEWTestRunner:
             callback(result.wasSuccessful())
     
     
-    def startTestsThread(callback):
+    def startTestsThread(self, callback):
         """
         The only way to run the tests on the main thread and wait until certain asynchronous messages are received
         is to spin the main GUI event loop while we wait for messages, but not all platforms expose this functionality.
@@ -160,5 +160,6 @@ class PEWTestRunner:
         thread.start()
 
 if __name__ == "__main__":
-    start_coverage_tests()
-    runTests(allTests=False)
+    test_runner = PEWTestRunner()
+    test_runner.start_coverage_tests()
+    test_runner.runTests(allTests=False)
