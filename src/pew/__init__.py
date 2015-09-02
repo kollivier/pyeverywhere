@@ -328,17 +328,6 @@ def get_user_path(app_name="python"):
         # https://groups.google.com/forum/#!topic/kivy-users/sQXAOecthmE
         return os.path.join(root, "Documents")
 
-def get_app_dir():
-    """
-    Returns the root of the application's resources directory, that is,
-    where all app assets, files, etc. are stored.
-    """
-    if hasattr(sys, "frozen"):
-        return os.path.dirname(sys.executable)
-    
-    # we run dirname twice to strip out the "pew" subdirectory.
-    return os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-
 def get_app_files_dir():
     """
     Returns the location where the application's support files should be stored.
