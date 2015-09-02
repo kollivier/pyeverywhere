@@ -32,6 +32,7 @@
     </head>
     <body onload="javascript:bridge.sendMessage('load_complete')">
         <script src="lib/jquery.js" charset="utf-8"></script>
+        <script src="lib/jquery.simulate.js" charset="utf-8"></script>
         <script src="lib/handlebars.js" charset="utf-8"></script>
         <script src="lib/nativebridge.js" charset="utf-8"></script>
         <script src="lib/ratchet.js" charset="utf-8"></script>
@@ -55,7 +56,7 @@
                 <h1 class="title">Hello World!</h1>
             </header>
             <p id="spam">Welcome to Hello World the App! Click the button to see some Python magic!</p>
-            <button class="btn btn-block btn-primary" onclick="bridge.sendMessage('make_it_so')">Do it!</button>
+            <button id="quote_button" class="btn btn-block btn-primary" onclick="bridge.sendMessage('make_it_so')">Do it!</button>
         </script>        
     </body>
 </html>

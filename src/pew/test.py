@@ -7,6 +7,7 @@ import os
 import re
 import tempfile
 import threading
+import time
 import unittest
 
 import pew
@@ -19,6 +20,16 @@ try:
 except Exception, e:
     import traceback
     logging.warning(traceback.format_exc(e))
+
+
+def start_coverage_tests():
+    """
+    Starts code coverage monitoring during the tests. This is a module function
+    so that we can start coverage reporting as soon as possible after the app starts,
+    even before the app and test runner is fully initialized.
+    """
+    if has_figleaf:
+        figleaf.start(ignore_python_lib=True)
 
 
 class PEWTestCase(unittest.TestCase):
@@ -71,14 +82,6 @@ class PEWTestRunner:
     """
     Class for running both functional and unit tests on a PEWApp.
     """
-    def start_coverage_tests(self):
-        """
-        Starts code coverage monitoring during the tests.
-        """
-        if has_figleaf:
-            figleaf.start(ignore_python_lib=True)
-    
-    
     def generate_coverage_report(self):
         """
         Generates a coverage report in HTML format.
@@ -105,7 +108,7 @@ class PEWTestRunner:
         report_dir = os.path.join(tempdir, "figleaf-html-report")
         if not os.path.exists(report_dir):
             os.makedirs(report_dir)
-        html_report.report_as_html(coverage_data, report_dir, [re.compile(".*testrunner.py"), re.compile(".*site-packages.*"), re.compile(".*pubsub.*")], {})
+        html_report.report_as_html(coverage_data, report_dir, [re.compile(".*site-packages.*"), re.compile(".*pubsub.*"), re.compile(".*pew/.*")], {})
     
         logging.info("Writing report to %s" % report_dir)
         return os.path.join(report_dir, "index.html")
@@ -156,7 +159,7 @@ class PEWTestRunner:
     
         So as an alternative, we run the tests on a thread so that we can simply sleep until the messages arrive.
         """
-        thread = threading.Thread(target=runTests, args=(True,callback))
+        thread = threading.Thread(target=self.runTests, args=(True,callback))
         thread.start()
 
 if __name__ == "__main__":

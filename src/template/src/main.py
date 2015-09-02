@@ -16,6 +16,8 @@ def start_app():
 
 
 if "--test" in sys.argv or ("PEW_RUN_TESTS" in os.environ and os.environ["PEW_RUN_TESTS"] == "1"):
+    import pew.test
+    pew.test.start_coverage_tests()
     olddir = os.getcwd()
     os.chdir(thisdir)
 
@@ -23,10 +25,8 @@ if "--test" in sys.argv or ("PEW_RUN_TESTS" in os.environ and os.environ["PEW_RU
     # if we are running functional tests, we should spin up the UI, but
     # if we're just running unit tests we should just run them and quit.
     if "--no-functional" in sys.argv:
-        import pew.test
         print("only running unit tests?")
         test_runner = pew.test.PEWTestRunner()
-        test_runner.start_coverage_tests()
         def finished_callback(success):
             if success:
                 report = test_runner.generate_coverage_report()
