@@ -17,13 +17,13 @@ Features
 * Because PyEverywhere is built on top of Pythonista (iOS), Kivy (Android), and wxPython (Mac/Win), 
   you can use their APIs for platform-specific UI or functionality.
 * Full HTML5 support. Anything the native browsers support, you can support in your app
-* BYOF (Bring Your Own Framework). The only requirements are jQuery and nativebridge.js.
+* BYOWF (Bring Your Own Web Framework). The only requirements are jQuery and nativebridge.js.
   Otherwise, you are free to use whatever JS frameworks, libraries, or templating tools you wish
 * Mock UI creation support. The native bridge supports the use of an optional JS controller. When
   a protocol is not specified, it will fall back to sending the messages to the JS controller instead.
   This makes it possible to completely test the UI from a browser, which helps to catch UI bugs and JS errors
 * Unit and functional test support. Using :class:`pew.PEWTestCase`, you can automate UI interaction and
-  test that the application performs as expected
+  test that the application performs as expected. The project template includes a working example of this
 * Support for third-party Python modules. You can add pure Python third-party modules to your app, along with
   some C++ library Python wrappers. More will continue to be added!
 

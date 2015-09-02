@@ -27,6 +27,8 @@ PEW Test Module
 
 .. automodule:: pew.test
 
+.. autofunction:: pew.test.start_coverage_tests
+
 PEWTestCase
 +++++++++++
 .. autoclass:: pew.test.PEWTestCase
