@@ -255,7 +255,7 @@ def main():
     commands = parser.add_subparsers(title='commands', help='Commands to operate on PyEverywhere projects')
 
     build_opt = commands.add_parser('build', help="Build PyEverywhere binary")
-    build_opt.add_argument('platform', help='Platform to build project for. Choices are: %r' % (platforms,))
+    build_opt.add_argument('platform', choices=platforms, help='Platform to build project for. Choices are: %r' % (platforms,))
     build_opt.set_defaults(func=build)
 
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
@@ -263,20 +263,20 @@ def main():
     new_opt.set_defaults(func=create)
 
     up_opt = commands.add_parser('init', help="Initialize the PyEverywhere dependencies for the project in the current working directory.")
-    up_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=init)
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")
-    run_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    run_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
     run_opt.set_defaults(func=run)
 
     test_opt = commands.add_parser('test', help="Run PyEverywhere project")
-    test_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    test_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
     test_opt.add_argument('--no-functional', action='store_true', help='Only run unit tests, do not start the GUI and run functional tests.')
     test_opt.set_defaults(func=test)
 
     up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
-    up_opt.add_argument('platform', help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=update)
 
     args = parser.parse_args()
