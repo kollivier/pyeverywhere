@@ -108,7 +108,7 @@ def run(args):
     elif args.platform == "ios":
         build(args)  # we can't run the app programmatically, so just use build to load the project.
     else:
-        os.system(sys.executable + " src/main.py")
+        os.system(sys.executable + " src/main.py " + " ".join(args.args))
 
 def build(args):
     returncode = 0
@@ -268,6 +268,7 @@ def main():
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")
     run_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
+    run_opt.add_argument('args', nargs=argparse.REMAINDER)
     run_opt.set_defaults(func=run)
 
     test_opt = commands.add_parser('test', help="Run PyEverywhere project")
