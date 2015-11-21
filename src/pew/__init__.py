@@ -225,7 +225,7 @@ class WebUIView(NativeWebView):
 
     def parse_message(self, url):
         """
-        Processes a message received from the JavaScript bridge and calls the 
+        Processes a message received from the JavaScript bridge and calls the
         corresponding Python delegate method. Internal use only.
         """
         if not url.startswith(self.protocol):
@@ -234,16 +234,16 @@ class WebUIView(NativeWebView):
         logging.debug("parsing url: %r" % (url,))
         parts = urlparse.urlparse(url)
         query = parts.query
-        
+
         # On Android at least, Python puts the ?whatever part in path rather than query
         path = parts.path.split("?")
         if len(path) == 2 and not query:
             query = path[1]
-            path = path[0]
-        
+        path = path[0]
+
         func_name = parts.netloc
         if path != "":
-            func_name += parts.path.replace("/", ".")
+            func_name += path.replace("/", ".")
         command = u"%s" % func_name
 
         func_args = []
@@ -252,7 +252,7 @@ class WebUIView(NativeWebView):
             args = query.split("&")
             for arg in args:
                 arg = urllib2.unquote(arg.encode('ascii'))
-                print("arg = %s" % arg.decode('utf-8'))
+                logging.debug("arg = %s" % arg)
                 #arg = arg.replace("\\", "\\\\")
                 #arg = arg.replace("\\u", "\u")
                 arg = arg.decode('utf-8')
@@ -285,7 +285,6 @@ class WebUIView(NativeWebView):
         logging.debug("calling: %s" % command)    
         function = eval(command)
         function(*func_args, **func_kwargs)
-        #eval(command)
 
         self.message_received = True
         return True
