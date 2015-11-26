@@ -121,7 +121,7 @@ class WebUIView(NativeWebView):
     engine. It constructs a native window and fills the entire window with 
     the contents of the web view.
     """
-    def __init__(self, name, url, protocol, delegate):
+    def __init__(self, name, url, protocol, delegate, size=(1024, 768)):
         """
         Creates a native WebUIView and accompanying UI window.
         
@@ -130,7 +130,7 @@ class WebUIView(NativeWebView):
         :param protcol: string designating the app protocol to use, e.g. myapp will result in myapp://message messages
         :param delegate: a Python object that will receive the messages sent from the web UI
         """
-        super(WebUIView, self).__init__(name)
+        super(WebUIView, self).__init__(name, size)
 
         self.protocol = protocol
         if not "://" in protocol:

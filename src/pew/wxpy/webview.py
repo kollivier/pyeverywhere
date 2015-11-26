@@ -8,9 +8,10 @@ logging.info("Initializing WebView?")
 
 PEWThread = threading.Thread
 
+
 class NativeWebView(object):
-    def __init__(self, name="WebView"):
-        self.view = wx.Frame(None, -1, name, size=(700, 500))
+    def __init__(self, name="WebView", size=(1024, 768)):
+        self.view = wx.Frame(None, -1, name, size=size)
         self.webview = wx.webkit.WebKitCtrl(self.view, -1)
         self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
         self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
@@ -24,7 +25,7 @@ class NativeWebView(object):
         self.webview.LoadURL(url)
 
     def evaluate_javascript(self, js):
-        js = js.encode('utf8');
+        js = js.encode('utf8')
         wx.CallAfter(self.webview.RunScript, js)
 
     def OnClose(self, event):

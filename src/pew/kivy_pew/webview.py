@@ -7,20 +7,22 @@ import kivy
 
 logging.info("Starting kivy...?")
 
-from kivy.lang import Builder                                                                   
-from kivy.utils import platform                                                                 
-from kivy.uix.widget import Widget                                                              
-from kivy.clock import Clock                                                                    
+from kivy.lang import Builder
+from kivy.utils import platform
+from kivy.uix.widget import Widget
+from kivy.clock import Clock
 from jnius import autoclass, JavaClass, PythonJavaClass, MetaJavaClass, java_method, JavaMethod
-from android.runnable import run_on_ui_thread                                                   
+from android.runnable import run_on_ui_thread
 
-WebView = autoclass('android.webkit.WebView')                                                 
-WebViewClient = autoclass('android.webkit.WebViewClient') 
-PythonWebViewClient = autoclass('org.kosoftworks.pyeverywhere.PEWebViewClient')                                      
+WebView = autoclass('android.webkit.WebView')
+WebViewClient = autoclass('android.webkit.WebViewClient')
+PythonWebViewClient = autoclass('org.kosoftworks.pyeverywhere.PEWebViewClient')
 activity = autoclass('org.renpy.android.PythonActivity').mActivity
+
 
 def show_alert(title, message=""):
     logging.info("Alert: %s %s" % (title, message))
+
 
 class PEWThread(threading.Thread):
     """
@@ -46,6 +48,7 @@ class PEWThread(threading.Thread):
     def clean_up(self):
         jnius.detach()
 
+
 class PEWebViewClientInterface(PythonJavaClass):
     __javainterfaces__ = ['org/kosoftworks/pyeverywhere/WebViewCallbacks']
     __javacontext__ = 'app'
@@ -66,10 +69,11 @@ class PEWebViewClientInterface(PythonJavaClass):
     @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)V')
     def pageLoadComplete(self, view, url):
         logging.debug("onPageFinished called with url %s" % url)
-        self.delegate.webview_did_finish_load(self.webview, url)                           
+        self.delegate.webview_did_finish_load(self.webview, url)
 
-class AndroidWebView(Widget):                                                                               
-    def __init__(self, **kwargs):                                                               
+
+class AndroidWebView(Widget):
+    def __init__(self, **kwargs):
         super(AndroidWebView, self).__init__(**kwargs)
         self.initialized = False
         self.webview = None
@@ -85,20 +89,22 @@ class AndroidWebView(Widget):
     def evaluate_javascript(self, js):
         self.webview.evaluateJavascript(js, None)
 
-    @run_on_ui_thread                                                                         
-    def create_webview(self, *args):                                                            
-        self.webview = WebView(activity)                                                             
+    @run_on_ui_thread
+    def create_webview(self, *args):
+        self.webview = WebView(activity)
         settings = self.webview.getSettings()
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
         settings.setAllowUniversalAccessFromFileURLs(True)
-        activity.setContentView(self.webview)             
+        activity.setContentView(self.webview)
+        self.webview.setWebContentsDebuggingEnabled(True)
         self.webview.setWebViewClient(self.client)
         self.initialized = True
         self.load_url(self.url)
 
+
 class NativeWebView(object):
-    def __init__(self, name="WebView"):
+    def __init__(self, name="WebView", size=None):
         self.initialize()
 
     def initialize(self):
@@ -111,7 +117,7 @@ class NativeWebView(object):
     @run_on_ui_thread
     def show(self):
         pass
-    
+
     @run_on_ui_thread
     def load_url(self, url):
         self.webview.load_url(url)
@@ -119,4 +125,3 @@ class NativeWebView(object):
     @run_on_ui_thread
     def evaluate_javascript(self, js):
         self.webview.evaluate_javascript(js)
-

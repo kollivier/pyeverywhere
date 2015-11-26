@@ -3,15 +3,17 @@ import logging
 import console
 import ui
 
+
 @ui.in_background
 def show_alert(title, message=""):
     console.alert(title, message)
 
+
 class PEWThread(object):
     """
-    PEWThread is a subclass of the Python threading.Thread object that allows it 
+    PEWThread is a subclass of the Python threading.Thread object that allows it
     to work with some native platforms that require additional handling when interacting
-    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer 
+    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer
     to that for API documentation.
     """
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
@@ -26,8 +28,9 @@ class PEWThread(object):
     def run(self):
         self.target(*self.args, **self.kwargs)
 
+
 class NativeWebView(object):
-    def __init__(self, name="WebView"):
+    def __init__(self, name="WebView", size=None):
         self.view = ui.View()                                      # [1]
         self.view.name = name                                    # [2]
         self.view.background_color = 'white'                       # [3]
@@ -41,7 +44,7 @@ class NativeWebView(object):
 
     def load_url(self, url):
         self.webview.load_url(url)
-    
+
     def evaluate_javascript(self, js):
         self.webview.evaluate_javascript(js)
 
@@ -54,6 +57,6 @@ class NativeWebView(object):
 
     def webview_did_finish_load(self, webview):
         return self.webview_did_finish_load(self)
-    
+
     def webview_did_fail_load(self, webview, error_code, error_msg):
         return self.webview_did_fail_load(self, error_code, error_msg)
