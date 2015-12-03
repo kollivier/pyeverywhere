@@ -31,13 +31,13 @@ class PEWThread(object):
 
 class NativeWebView(object):
     def __init__(self, name="WebView", size=None):
-        self.view = ui.View()                                      # [1]
-        self.view.name = name                                    # [2]
-        self.view.background_color = 'white'                       # [3]
+        self.view = ui.View()
+        self.view.name = name
+        self.view.background_color = 'white'
         self.webview = ui.WebView()
         self.webview.delegate = self
         self.webview.flex = 'WH'
-        self.view.add_subview(self.webview)                              # [8]
+        self.view.add_subview(self.webview)
 
     def show(self):
         self.view.present('fullscreen', hide_title_bar=True)
