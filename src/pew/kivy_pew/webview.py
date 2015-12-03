@@ -44,7 +44,6 @@ class PEWThread(threading.Thread):
         finally:
             self.clean_up()
 
-    @atexit.register
     def clean_up(self):
         jnius.detach()
 
