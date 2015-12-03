@@ -195,7 +195,7 @@ class WebUIView(NativeWebView):
             args.append("'%s'" % arg.replace("'", "\\'").encode("utf-8"))
 
         js = "%s(%s);" % (function_name, ','.join(args))
-
+        logging.debug("calling JS: %s" % js)
         self.evaluate_javascript(js)
 
     def get_value_from_js(self, value):
@@ -257,38 +257,32 @@ class WebUIView(NativeWebView):
                 #arg = arg.replace("\\u", "\u")
                 arg = arg.decode('utf-8')
                 name = None
-                value = None
-                pieces = arg.split("=")
-                if len(pieces) == 2:
-                    name = pieces[0]
-                    value = pieces[1]
-                else:
-                    value = pieces[0]
+                value = arg
                 if value == "empty_string":
                     value = ""
-                    
+
                 try:
                     value = json.loads(value)
                 except:
                     pass
-                
+
                 if name is not None:
                     func_kwargs[name] = value
                 else:
                     func_args.append(value)
-        
+
         if func_name.startswith("get_value_from_js"):
             command = "self.%s" % func_name
         else:
             command = "self.delegate.%s" % func_name
-        
-        logging.debug("calling: %s" % command)    
+
+        logging.debug("calling: %s" % command)
         function = eval(command)
         function(*func_args, **func_kwargs)
 
         self.message_received = True
         return True
-    
+
     def shutdown(self):
         self.delegate.shutdown()
 
@@ -298,14 +292,16 @@ class WebUIView(NativeWebView):
 
     def webview_did_start_load(self, webview, url=None):
         pass
+
     def webview_did_finish_load(self, webview, url=None):
         if url is None or url.startswith("file://") and "index.html" in url:
             self.page_loaded = True
             webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
             self.delegate.load_complete()
-    
+
     def webview_did_fail_load(self, webview, error_code, error_msg):
-        self.page_loaded = True # make sure we don't wait forever if the page fails to load
+        self.page_loaded = True  # make sure we don't wait forever if the page fails to load
+
 
 def get_user_dir():
     """
@@ -313,9 +309,10 @@ def get_user_dir():
     """
     return os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
 
+
 def get_user_path(app_name="python"):
-    """ 
-    Returns the folder where user data can be stored. 
+    """
+    Returns the folder where user data can be stored.
     """
     global platform
     root = get_user_dir()
@@ -326,6 +323,7 @@ def get_user_path(app_name="python"):
         # Documents seems to the the place to put it
         # https://groups.google.com/forum/#!topic/kivy-users/sQXAOecthmE
         return os.path.join(root, "Documents")
+
 
 def get_app_files_dir():
     """
@@ -343,6 +341,6 @@ def get_app_files_dir():
         else:
             return os.path.join(get_user_dir(), "Application Data")
 
-    # iOS and Android store documents inside their own special folders, 
+    # iOS and Android store documents inside their own special folders,
     # so the directory is already app-specific
     return get_user_path(app_name)
