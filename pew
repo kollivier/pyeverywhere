@@ -117,6 +117,14 @@ def build(args):
         src_dir = os.path.join(cwd, "src")
         build_dir = os.path.join(cwd, "build", "android")
 
+        icon = "fakefile"
+        if "icons" in info_json and "android" in info_json["icons"]:
+            icon = os.path.abspath(os.path.join("icons", "android", info_json["icons"]["android"]))
+
+        launch = "fakefile"
+        if "launch_images" in info_json and "android" in info_json["launch_images"]:
+            launch = os.path.abspath(info_json["launch_images"]["android"])
+
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
 
@@ -127,7 +135,7 @@ def build(args):
         shutil.copytree(src_dir, build_dir)
         shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
-        cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir) 
+        cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch)
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":

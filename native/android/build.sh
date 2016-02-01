@@ -10,8 +10,23 @@ echo "PWD is $PWD"
 
 cp $SCRIPT_DIR/src/org/kosoftworks/pyeverywhere/*.java $DIR/python-for-android/dist/default/src
 
+ICON=
+if [ -f $5 ]
+then
+ICON="--icon $5"
+fi
+
+LAUNCH=
+if [ -f $6 ]
+then
+LAUNCH="--presplash $6"
+
+fi
+
 cd python-for-android/dist/default
-python build.py --package $1 --name $2 --version $3 --orientation fullUser --permission INTERNET --permission WRITE_EXTERNAL_STORAGE --dir $4 debug
+echo "build.py --package $1 --name $2 --version $3 --orientation landscape --permission INTERNET --permission WRITE_EXTERNAL_STORAGE --dir $4 $ICON debug
+"
+python build.py --package $1 --name $2 --version $3 --orientation landscape --permission INTERNET --permission WRITE_EXTERNAL_STORAGE --dir $4 $ICON $LAUNCH debug
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]
