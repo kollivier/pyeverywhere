@@ -26,9 +26,9 @@ def show_alert(title, message=""):
 
 class PEWThread(threading.Thread):
     """
-    PEWThread is a subclass of the Python threading.Thread object that allows it 
+    PEWThread is a subclass of the Python threading.Thread object that allows it
     to work with some native platforms that require additional handling when interacting
-    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer 
+    with the GUI. The API for PEWThread mimics threading.Thread exactly, so please refer
     to that for API documentation.
     """
     def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
@@ -39,7 +39,8 @@ class PEWThread(threading.Thread):
             super(PEWThread, self).run()
         except Exception, e:
             import traceback
-            logging.error("Error occurred in %r thread. Error details:" % self.target)
+            if hasattr(self, "target"):
+                logging.error("Error occurred in %r thread. Error details:" % self.target)
             logging.error(traceback.format_exc(e))
         finally:
             self.clean_up()
