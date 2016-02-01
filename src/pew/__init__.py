@@ -133,8 +133,9 @@ class WebUIView(NativeWebView):
         super(WebUIView, self).__init__(name, size)
 
         self.protocol = protocol
+        url = url + "?protocol=" + protocol
         if not "://" in protocol:
-            self.protocol += "://" 
+            self.protocol += "://"
         self.delegate = delegate
 
         self.page_loaded = False
@@ -192,7 +193,11 @@ class WebUIView(NativeWebView):
         """
         args = []
         for arg in a:
-            args.append("'%s'" % arg.replace("'", "\\'").encode("utf-8"))
+            if isinstance(arg, basestring):
+                arg = "'%s'" % arg.replace("'", "\\'").encode("utf-8")
+            else:
+                arg = "%s" % str(arg)
+            args.append(arg)
 
         js = "%s(%s);" % (function_name, ','.join(args))
         logging.debug("calling JS: %s" % js)
