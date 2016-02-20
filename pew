@@ -139,14 +139,16 @@ def build(args):
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":
-        project_dir = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate") 
+        project_dir = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate")
         plist_file = os.path.join(project_dir, "Info.plist")
         if os.path.exists(plist_file):
+            version_short = info_json["version"].split(".")
+            version_short = ".".join(version_short[:3])
             plist = plistlib.readPlist(plist_file)
             plist['CFBundleIdentifier'] = info_json["identifier"]
             plist['CFBundleName'] = plist['CFBundleDisplayName'] = info_json["name"]
             plist['CFBundleVersion'] = info_json["version"]
-            plist['CFBundleShortVersionString'] = info_json["version"]
+            plist['CFBundleShortVersionString'] = version_short
             if "icons" in info_json and "ios" in info_json["icons"]:
                 icons = info_json["icons"]["ios"]
                 if len(icons) > 0:
