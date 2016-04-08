@@ -41,10 +41,10 @@ fi
 
 if [ ! -d apache-ant-$ANT_VERSION ]
 then
-    curl --location http://www.trieuvan.com/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
+    curl --location http://www.motorlogy.com/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
 fi
 
 if [ ! -d python-for-android ]
 then
-    git clone https://github.com/kivy/python-for-android.git
+    git clone -b old_toolchain https://github.com/kivy/python-for-android.git
 fi
