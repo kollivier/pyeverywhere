@@ -121,7 +121,7 @@ class WebUIView(NativeWebView):
     engine. It constructs a native window and fills the entire window with 
     the contents of the web view.
     """
-    def __init__(self, name, url, protocol, delegate, size=(1024, 768)):
+    def __init__(self, name, url, protocol=None, delegate=None, size=(1024, 768)):
         """
         Creates a native WebUIView and accompanying UI window.
         
@@ -133,14 +133,18 @@ class WebUIView(NativeWebView):
         super(WebUIView, self).__init__(name, size)
 
         self.protocol = protocol
-        url = url + "?protocol=" + protocol
-        if not "://" in protocol:
-            self.protocol += "://"
+        if protocol is not None:
+            url = url + "?protocol=" + protocol
+            if not "://" in protocol:
+                self.protocol += "://"
         self.delegate = delegate
 
         self.page_loaded = False
         self.js_value = None
         self.message_received = False
+
+        # a list of JS calls made since app start so that we can do playback in a browser for testing.
+        self.js_session_script = ""
 
         self.load_url(url)
     
@@ -200,8 +204,13 @@ class WebUIView(NativeWebView):
             args.append(arg)
 
         js = "%s(%s);" % (function_name, ','.join(args))
+        self.js_session_script += js + "\n"
+
         logging.debug("calling JS: %s" % js)
         self.evaluate_javascript(js)
+
+    def get_js_session_script(self):
+        return self.js_session_script
 
     def get_value_from_js(self, value):
         self.js_value = value.replace("%", "%%")
@@ -233,7 +242,7 @@ class WebUIView(NativeWebView):
         Processes a message received from the JavaScript bridge and calls the
         corresponding Python delegate method. Internal use only.
         """
-        if not url.startswith(self.protocol):
+        if not self.protocol or not url.startswith(self.protocol):
             return False
 
         logging.debug("parsing url: %r" % (url,))
@@ -292,21 +301,20 @@ class WebUIView(NativeWebView):
         self.delegate.shutdown()
 
     def webview_should_start_load(self, webview, url, nav_type):
-        #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
-        return not self.parse_message(url)
+        if self.protocol is not None:
+            return not self.parse_message(url)
+        return True
 
     def webview_did_start_load(self, webview, url=None):
         pass
-
     def webview_did_finish_load(self, webview, url=None):
         if url is None or url.startswith("file://") and "index.html" in url:
             self.page_loaded = True
             webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
             self.delegate.load_complete()
-
+    
     def webview_did_fail_load(self, webview, error_code, error_msg):
-        self.page_loaded = True  # make sure we don't wait forever if the page fails to load
-
+        self.page_loaded = True # make sure we don't wait forever if the page fails to load
 
 def get_user_dir():
     """
@@ -314,10 +322,9 @@ def get_user_dir():
     """
     return os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
 
-
 def get_user_path(app_name="python"):
-    """
-    Returns the folder where user data can be stored.
+    """ 
+    Returns the folder where user data can be stored. 
     """
     global platform
     root = get_user_dir()
@@ -328,7 +335,6 @@ def get_user_path(app_name="python"):
         # Documents seems to the the place to put it
         # https://groups.google.com/forum/#!topic/kivy-users/sQXAOecthmE
         return os.path.join(root, "Documents")
-
 
 def get_app_files_dir():
     """
@@ -346,6 +352,6 @@ def get_app_files_dir():
         else:
             return os.path.join(get_user_dir(), "Application Data")
 
-    # iOS and Android store documents inside their own special folders,
+    # iOS and Android store documents inside their own special folders, 
     # so the directory is already app-specific
     return get_user_path(app_name)
