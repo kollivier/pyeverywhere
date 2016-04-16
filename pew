@@ -8,6 +8,8 @@ logging.basicConfig()
 import os
 import plistlib
 import shutil
+import SimpleHTTPServer
+import SocketServer
 import subprocess
 import sys
 import tempfile
@@ -28,6 +30,7 @@ android_dir = os.path.join(thisdir, "native", "android")
 
 platforms = [
     "android",
+    "browser",
     "ios",
     "mac",
     "win"
@@ -107,6 +110,26 @@ def run(args):
         sys.exit(os.system(cmd))
     elif args.platform == "ios":
         build(args)  # we can't run the app programmatically, so just use build to load the project.
+    elif args.platform == "browser":
+        HOST = ""
+        PORT = 8000
+
+        http_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+
+        httpd = SocketServer.TCPServer(("", PORT), http_handler)
+        try:
+            ui_root = "src/files/www/index.html"
+            if "ui_root" in info_json:
+                ui_root = info_json["ui_root"]
+            root = os.path.dirname(os.path.abspath(ui_root))
+            os.chdir(root)
+            hostname = HOST
+            if HOST == "":
+                hostname = "localhost"
+            print("Open your browser to http://%s:%d/" % (hostname, PORT))
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            httpd.socket.close()
     else:
         os.system(sys.executable + " src/main.py " + " ".join(args.args))
 
