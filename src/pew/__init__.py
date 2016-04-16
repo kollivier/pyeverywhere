@@ -242,11 +242,13 @@ class WebUIView(NativeWebView):
         Processes a message received from the JavaScript bridge and calls the
         corresponding Python delegate method. Internal use only.
         """
-        if not self.protocol or not url.startswith(self.protocol):
+        logging.debug("parsing url: %r" % (url,))
+
+        parts = urlparse.urlparse(url)
+
+        if not parts.scheme in [self.protocol, "pew"]:
             return False
 
-        logging.debug("parsing url: %r" % (url,))
-        parts = urlparse.urlparse(url)
         query = parts.query
 
         # On Android at least, Python puts the ?whatever part in path rather than query
@@ -291,27 +293,32 @@ class WebUIView(NativeWebView):
             command = "self.delegate.%s" % func_name
 
         logging.debug("calling: %s" % command)
-        function = eval(command)
-        function(*func_args, **func_kwargs)
+        try:
+            function = eval(command)
+            function(*func_args, **func_kwargs)
+        except Exception, e:
+            import traceback
+            logging.error(traceback.format_exc(e))
 
         self.message_received = True
         return True
 
     def shutdown(self):
-        self.delegate.shutdown()
+        if self.delegate is not None:
+            self.delegate.shutdown()
 
     def webview_should_start_load(self, webview, url, nav_type):
-        if self.protocol is not None:
-            return not self.parse_message(url)
-        return True
+        return not self.parse_message(url)
 
     def webview_did_start_load(self, webview, url=None):
         pass
     def webview_did_finish_load(self, webview, url=None):
         if url is None or url.startswith("file://") and "index.html" in url:
             self.page_loaded = True
-            webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
-            self.delegate.load_complete()
+            if self.protocol is not None:
+                webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
+            if self.delegate:
+                self.delegate.load_complete()
     
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True # make sure we don't wait forever if the page fails to load
