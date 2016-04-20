@@ -30,7 +30,7 @@ class NativePEWApp(App):
     def on_pause(self):
         logging.info("on_pause called...")
         # Here you can save data if needed
-        return False
+        return True
 
     def on_stop(self):
         logging.info("on_stop called...")
