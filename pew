@@ -13,6 +13,8 @@ import SocketServer
 import subprocess
 import sys
 import tempfile
+import threading
+import webbrowser
 
 from distutils.core import setup
 
@@ -126,7 +128,15 @@ def run(args):
             hostname = HOST
             if HOST == "":
                 hostname = "localhost"
-            print("Open your browser to http://%s:%d/" % (hostname, PORT))
+            url = "http://%s:%d/" % (hostname, PORT)
+            print("URL: %s" % url)
+            print("If your browser does not open within a few seconds, copy and paste this URL to test.")
+
+            def open_browser():
+                webbrowser.open(url)
+            timer = threading.Timer(2.0, open_browser)
+            timer.start()
+
             httpd.serve_forever()
         except KeyboardInterrupt:
             httpd.socket.close()
