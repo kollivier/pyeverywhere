@@ -1,15 +1,20 @@
 """
 The PyEverywhere (pew) module acts as a bridge layer between the Python app logic
-and an HTML/CSS/JS-based front end. 
+and an HTML/CSS/JS-based front end.
 """
 
 
 __version__ = "0.9.1"
 
+HOST = ""
+PORT = 8000
+
 import copy
 import json
 import logging
 import os
+import SimpleHTTPServer
+import SocketServer
 import sys
 import threading
 import time
@@ -71,6 +76,45 @@ def get_app_name():
     """
     global app_name
     return app_name
+
+
+def start_local_server(url_root, host=None, port=None, callback=None):
+    """
+    Starts a local HTTP server with the site root pointing to the directory passed in
+    as url_root. This function does not return - if using this in a GUI app, make sure
+    to call this in a thread. If the host and port are not passed in, they default to
+    "" and 8000, respectively.
+
+    If there's a callback function, it will call that once it starts the server. This is
+    useful for taking an action like opening the site in a web browser once it is loaded.
+    """
+
+    if host is None:
+        host = HOST
+
+    if port is None:
+        port = PORT
+
+    http_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+
+    httpd = SocketServer.TCPServer((HOST, PORT), http_handler)
+    try:
+        root = os.path.abspath(url_root)
+        os.chdir(root)
+        hostname = HOST
+        if HOST == "":
+            hostname = "localhost"
+        url = "http://%s:%d/" % (hostname, PORT)
+        print("URL: %s" % url)
+        print("If your browser does not open within a few seconds, copy and paste this URL to test.")
+
+        if callback:
+            timer = threading.Timer(2.0, callback, (url,))
+            timer.start()
+
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        httpd.socket.close()
 
 
 class PEWTimeoutError(Exception):
