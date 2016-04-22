@@ -93,7 +93,7 @@ var NativeBridge = function() {
 
         if (this.protocol !== null) {
             console.log("sending message " + url);
-            window.location.href = this.protocol + url;
+            $.ajax(this.protocol + url);
         } else if (this.js_controller !== null) {
             var methodString = "this.js_controller." + arguments[0].replace("/", ".") + "(";
             if (arguments.length > 1)

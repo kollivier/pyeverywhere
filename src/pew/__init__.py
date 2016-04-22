@@ -6,8 +6,9 @@ and an HTML/CSS/JS-based front end.
 
 __version__ = "0.9.1"
 
-HOST = ""
+HOST = "127.0.0.1"
 PORT = 8000
+MSG_PORT = 8128
 
 import copy
 import json
@@ -22,6 +23,8 @@ import unittest
 import urllib
 import urllib2
 import urlparse
+
+from BaseHTTPServer import BaseHTTPRequestHandler
 
 platform = None
 
@@ -55,7 +58,7 @@ try:
 except Exception, e:
     pass
 
-if platform == None:
+if platform is None:
     raise Exception("PyEverywhere does not currently support this platform.")
 
 app_name = "python"
@@ -78,7 +81,22 @@ def get_app_name():
     return app_name
 
 
-def start_local_server(url_root, host=None, port=None, callback=None):
+message_delegate = None
+def start_message_server(delegate, host=HOST, port=MSG_PORT):
+    """
+    Messages sent to the server at the specified host and port will be parsed as URLs
+    and converted to Python methods called upon the delegate object, which must be a
+    PEWMessageHandler-derived object.
+    """
+    from BaseHTTPServer import HTTPServer
+    global message_delegate
+    message_delegate = delegate
+    server = HTTPServer((host, port), PEWMessageRequestHandler)
+    logging.info("message server initialized")
+    server.serve_forever()
+
+
+def start_local_server(url_root, host=HOST, port=PORT, callback=None):
     """
     Starts a local HTTP server with the site root pointing to the directory passed in
     as url_root. This function does not return - if using this in a GUI app, make sure
@@ -88,12 +106,6 @@ def start_local_server(url_root, host=None, port=None, callback=None):
     If there's a callback function, it will call that once it starts the server. This is
     useful for taking an action like opening the site in a web browser once it is loaded.
     """
-
-    if host is None:
-        host = HOST
-
-    if port is None:
-        port = PORT
 
     http_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
 
@@ -121,8 +133,115 @@ class PEWTimeoutError(Exception):
     """
     Exception thrown when PEW times out waiting to retrieve a JS value.
     """
-    
+
     pass
+
+
+class PEWMessageRequestHandler(BaseHTTPRequestHandler):
+    handler = None
+
+    def do_GET(self):
+        global message_delegate
+        if message_delegate and message_delegate.parse_message(self.path):
+            self.send_response(200)
+        else:
+            self.send_response(500)
+
+
+class PEWMessageHandler:
+    def __init__(self, webview, delegate):
+        self.webview = webview
+        self.delegate = delegate
+        self.js_value = None
+        self.message_received = False
+
+    def get_value_from_js(self, value):
+        self.js_value = value.replace("%", "%%")
+
+    def get_js_value(self, variable, timeout=1):
+        """
+        Gets the value of a property, variable or function in JavaScript.
+
+        Javascript in many browsers runs asynchronously and cannot directly return a value, but
+        sometimes an app cannot proceed until a value is retrieved, e.g. tests, so this method
+        sends a message asking for the value and waits until JS sends back the value.
+
+        This method causes the app to sleep and should be avoided for any time-sensitive operation.
+
+        :param variable: the property or variable you want the value of
+        :param timeout: how many seconds to wait before giving up on retrieving the value
+        """
+        self.evaluate_javascript("bridge.getJSValue('%s');" % variable)
+        return self._wait_for_js_value(variable, timeout)
+
+    def clear_message_received_flag(self):
+        """
+        Clears the message received flag. This is mostly used for unit testing, so that we can wait on an async response after triggering a UI action.
+        """
+        self.message_received = False
+
+    def parse_message(self, url):
+        """
+        Processes a message received from the JavaScript bridge and calls the
+        corresponding Python delegate method. Internal use only.
+        """
+        logging.debug("parsing url: %r" % (url,))
+
+        parts = urlparse.urlparse(url)
+
+        query = parts.query
+
+        # On Android at least, Python puts the ?whatever part in path rather than query
+        path = parts.path.split("?")
+        if len(path) == 2 and not query:
+            query = path[1]
+        path = path[0][1:]
+
+        func_name = parts.netloc
+        if path != "":
+            func_name += path.replace("/", ".")
+        command = u"%s" % func_name
+
+        func_args = []
+        func_kwargs = {}
+        if query:
+            args = query.split("&")
+            for arg in args:
+                arg = urllib2.unquote(arg.encode('ascii'))
+                logging.debug("arg = %s" % arg)
+                #arg = arg.replace("\\", "\\\\")
+                #arg = arg.replace("\\u", "\u")
+                arg = arg.decode('utf-8')
+                name = None
+                value = arg
+                if value == "empty_string":
+                    value = ""
+
+                try:
+                    value = json.loads(value)
+                except:
+                    pass
+
+                if name is not None:
+                    func_kwargs[name] = value
+                else:
+                    func_args.append(value)
+
+        if func_name.startswith("get_value_from_js"):
+            command = "self.%s" % func_name
+        else:
+            command = "self.delegate.%s" % func_name
+
+        logging.debug("calling: %s" % command)
+        try:
+            function = eval(command)
+            function(*func_args, **func_kwargs)
+        except Exception, e:
+            import traceback
+            logging.error(traceback.format_exc(e))
+
+        self.message_received = True
+        return True
 
 
 class PEWApp(NativePEWApp):
@@ -184,8 +303,6 @@ class WebUIView(NativeWebView):
         self.delegate = delegate
 
         self.page_loaded = False
-        self.js_value = None
-        self.message_received = False
 
         # a list of JS calls made since app start so that we can do playback in a browser for testing.
         self.js_session_script = ""
@@ -256,103 +373,12 @@ class WebUIView(NativeWebView):
     def get_js_session_script(self):
         return self.js_session_script
 
-    def get_value_from_js(self, value):
-        self.js_value = value.replace("%", "%%")
-
-    def get_js_value(self, variable, timeout=1):
-        """
-        Gets the value of a property, variable or function in JavaScript. 
-        
-        Javascript in many browsers runs asynchronously and cannot directly return a value, but
-        sometimes an app cannot proceed until a value is retrieved, e.g. tests, so this method
-        sends a message asking for the value and waits until JS sends back the value.
- 
-        This method causes the app to sleep and should be avoided for any time-sensitive operation.
-
-        :param variable: the property or variable you want the value of 
-        :param timeout: how many seconds to wait before giving up on retrieving the value
-        """
-        self.evaluate_javascript("bridge.getJSValue('%s');" % variable)
-        return self._wait_for_js_value(variable, timeout)
-
-    def clear_message_received_flag(self):
-        """
-        Clears the message received flag. This is mostly used for unit testing, so that we can wait on an async response after triggering a UI action.
-        """
-        self.message_received = False
-
-    def parse_message(self, url):
-        """
-        Processes a message received from the JavaScript bridge and calls the
-        corresponding Python delegate method. Internal use only.
-        """
-        logging.debug("parsing url: %r" % (url,))
-
-        parts = urlparse.urlparse(url)
-
-        if not parts.scheme in [self.protocol, "pew"]:
-            return False
-
-        query = parts.query
-
-        # On Android at least, Python puts the ?whatever part in path rather than query
-        path = parts.path.split("?")
-        if len(path) == 2 and not query:
-            query = path[1]
-        path = path[0]
-
-        func_name = parts.netloc
-        if path != "":
-            func_name += path.replace("/", ".")
-        command = u"%s" % func_name
-
-        func_args = []
-        func_kwargs = {}
-        if query:
-            args = query.split("&")
-            for arg in args:
-                arg = urllib2.unquote(arg.encode('ascii'))
-                logging.debug("arg = %s" % arg)
-                #arg = arg.replace("\\", "\\\\")
-                #arg = arg.replace("\\u", "\u")
-                arg = arg.decode('utf-8')
-                name = None
-                value = arg
-                if value == "empty_string":
-                    value = ""
-
-                try:
-                    value = json.loads(value)
-                except:
-                    pass
-
-                if name is not None:
-                    func_kwargs[name] = value
-                else:
-                    func_args.append(value)
-
-        if func_name.startswith("get_value_from_js"):
-            command = "self.%s" % func_name
-        else:
-            command = "self.delegate.%s" % func_name
-
-        logging.debug("calling: %s" % command)
-        try:
-            function = eval(command)
-            function(*func_args, **func_kwargs)
-        except Exception, e:
-            import traceback
-            logging.error(traceback.format_exc(e))
-
-        self.message_received = True
-        return True
-
     def shutdown(self):
         if self.delegate is not None:
             self.delegate.shutdown()
 
     def webview_should_start_load(self, webview, url, nav_type):
-        return not self.parse_message(url)
+        return True
 
     def webview_did_start_load(self, webview, url=None):
         pass
