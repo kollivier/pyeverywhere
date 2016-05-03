@@ -12,14 +12,6 @@ fi
 
 cd "$DIR"
 
-PLATFORM='linux'
-NDKPLATFORM='linux'
-unamestr=`uname`
-if [[ "$unamestr" == 'Darwin' ]]; then
-   PLATFORM='macosx'
-   NDKPLATFORM='darwin'
-fi
-
 echo Platform is $PLATFORM
 
 export ANDROID_HOME=$DIR/android-sdk-$PLATFORM
