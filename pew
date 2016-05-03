@@ -69,6 +69,32 @@ info_json = {}
 
 info_file = os.path.join(cwd, "project_info.json")
 
+
+def create_android_setup_sh(info_json):
+    global cwd
+    android_sdk = "19"
+    android_build_tools = "23.0.3"
+
+    if "sdks" in info_json and "android" in info_json["sdks"]:
+        android_sdk_info = info_json["sdks"]["android"]
+        if "target_sdk" in android_sdk_info:
+            android_sdk = str(android_sdk_info["target_sdk"])
+        if "build_tools" in android_sdk_info:
+            android_build_tools = android_sdk_info["build_tools"]
+
+    android_native_dir = os.path.join(cwd, "native", "android")
+    if not os.path.exists(android_native_dir):
+        os.makedirs(android_native_dir)
+
+    android_setup_file = os.path.join(android_native_dir, "setup.sh")
+    f = open(android_setup_file, "wb")
+    f.write("""
+export ANDROIDAPI=%s
+export ANDROIDBUILDTOOLSVER=%s
+""" % (android_sdk, android_build_tools))
+    f.close()
+
+
 def dir_is_pew(check_dir):
     return os.path.exists(os.path.join(cwd, "project_info.json"))
 
@@ -311,6 +337,7 @@ def main():
 
         global info_json
         info_json = json.loads(open(info_file, "rb").read())
+        create_android_setup_sh(info_json)
     sys.exit(args.func(args))
 
 if __name__ == "__main__":
