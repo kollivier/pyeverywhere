@@ -59,7 +59,7 @@ except Exception, e:
     pass
 
 if platform is None:
-    raise Exception("PyEverywhere does not currently support this platform.")
+    logging.warning("PyEverywhere does not currently support this platform.")
 
 app_name = "python"
 

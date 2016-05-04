@@ -131,7 +131,7 @@ def run(args):
             print("Could not find APK file to run at %s" % apk_file)
             print("Please ensure that you have performed a build and that it succeeded, and try again.")
             sys.exit(1) 
-        cmd = "sh \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), apk_file, info_json["identifier"])
+        cmd = "bash \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), apk_file, info_json["identifier"])
         print("running %s" % cmd)
         sys.exit(os.system(cmd))
     elif args.platform == "ios":
@@ -173,7 +173,7 @@ def build(args):
         shutil.copytree(src_dir, build_dir)
         shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
-        cmd = "sh \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch)
+        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch)
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":

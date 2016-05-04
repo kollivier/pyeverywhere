@@ -1,8 +1,11 @@
+#!/bin/bash
+
 START_DIR=$PWD
 DIR=$PWD/native/android
-SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+SCRIPT_DIR=`dirname "$(readlink -f "$0")"`
 
 echo "Dir is $DIR"
+echo "Script Dir is $SCRIPT_DIR"
 if [ ! -d $DIR ]
 then
     mkdir -p "$DIR"
@@ -16,10 +19,14 @@ echo Platform is $PLATFORM
 
 export ANDROID_HOME=$DIR/android-sdk-$PLATFORM
 export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
-    
-if [ ! -d android-sdk-macosx ] 
+
+FORMAT=tgz
+
+echo Downloading http://dl.google.com/android/android-sdk_r24.4.1-$PLATFORM.$FORMAT
+
+if [ ! -d android-sdk-$PLATFORM ] 
 then
-    curl --location http://dl.google.com/android/android-sdk_r24.3.4-$PLATFORM.zip | tar -x -z -C .
+    curl --location http://dl.google.com/android/android-sdk_r24.4.1-$PLATFORM.$FORMAT | tar -x -z -C .
 fi 
 
 android update sdk --no-ui --all --filter platform-tool,android-$ANDROIDAPI,sysimg-$ANDROIDAPI,build-tools-$ANDROIDBUILDTOOLSVER
@@ -31,9 +38,11 @@ then
     ./android-ndk.bin
 fi 
 
+echo Downloading http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz
+
 if [ ! -d apache-ant-$ANT_VERSION ]
 then
-    curl --location http://www.motorlogy.com/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
+    curl --location http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
 fi
 
 if [ ! -d python-for-android ]

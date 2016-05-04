@@ -1,14 +1,16 @@
-#DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+#!/bin/bash
+
 ROOT_DIR="$PWD/native/android"
 
+echo "$ROOT_DIR/setup.sh"
 . $ROOT_DIR/setup.sh
 
-export ANT_VERSION="1.9.6"
+export ANT_VERSION="1.9.7"
 
 PLATFORM='linux'
 NDKPLATFORM='linux'
 unamestr=`uname`
-if [[ "$unamestr" == 'Darwin' ]]; then
+if [[ "$unamestr" == "Darwin" ]]; then
    PLATFORM='macosx'
    NDKPLATFORM='darwin'
 fi
