@@ -1,5 +1,6 @@
 import logging
 
+import android
 from android.runnable import run_on_ui_thread
 
 from kivy.app import App

@@ -32,6 +32,7 @@ platforms = [
     "android",
     "browser",
     "ios",
+    "linux",
     "mac",
     "win"
 ]

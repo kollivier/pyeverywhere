@@ -22,4 +22,4 @@ export ANDROIDNDK="$ROOT_DIR/android-ndk-$ANDROIDNDKVER"
 export ANT_HOME="$ROOT_DIR/apache-ant-$ANT_VERSION"
 echo "Android NDK is $ANDROIDNDK"
 
-export PATH=$ANDROIDNDK:$ANDROIDSDK/platform-tools:$ANDROIDSDK/tools:$ANT_HOME/bin:$PATH
+export PATH=$ANDROIDNDK:~/.local/bin:$ANDROIDSDK/platform-tools:$ANDROIDSDK/tools:$ANT_HOME/bin:$PATH

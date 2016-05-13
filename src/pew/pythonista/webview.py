@@ -45,6 +45,12 @@ class NativeWebView(object):
     def load_url(self, url):
         self.webview.load_url(url)
 
+    def get_user_agent(self):
+        return ""
+
+    def set_user_agent(self, user_agent):
+        pass
+
     def evaluate_javascript(self, js):
         self.webview.evaluate_javascript(js)
 

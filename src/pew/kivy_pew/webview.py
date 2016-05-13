@@ -17,7 +17,7 @@ from android.runnable import run_on_ui_thread
 WebView = autoclass('android.webkit.WebView')
 WebViewClient = autoclass('android.webkit.WebViewClient')
 PythonWebViewClient = autoclass('org.kosoftworks.pyeverywhere.PEWebViewClient')
-activity = autoclass('org.renpy.android.PythonActivity').mActivity
+activity = autoclass('org.kivy.android.PythonActivity').mActivity
 
 
 def show_alert(title, message=""):
@@ -63,7 +63,7 @@ class PEWebViewClientInterface(PythonJavaClass):
 
     @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)Z')
     def shouldLoadURL(self, view, url):
-        logging.debug("shouldOverrideUrlLoading called with url %s" % url)
+        logging.info("shouldOverrideUrlLoading called with url %s" % url)
         return not self.delegate.webview_should_start_load(self.webview, url, None)
 
     @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)V')
@@ -86,18 +86,30 @@ class AndroidWebView(Widget):
         if self.initialized:
             self.webview.loadUrl(url)
 
+    @run_on_ui_thread
     def evaluate_javascript(self, js):
-        self.webview.evaluateJavascript(js, None)
+        self.webview.loadUrl('javascript:' + js, None)
+
+    @run_on_ui_thread
+    def get_user_agent(self):
+        settings = self.webview.getSettings()
+        return settings.getUserAgentString()
+
+    @run_on_ui_thread
+    def set_user_agent(self, user_agent):
+        settings = self.webview.getSettings()
+        settings.setUserAgentString(user_agent)
 
     @run_on_ui_thread
     def create_webview(self, *args):
         self.webview = WebView(activity)
         settings = self.webview.getSettings()
+        settings.setUserAgentString(settings.getUserAgentString() + " / DentalTNTApp")
+        logging.info("User agent is %s" % settings.getUserAgentString())
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
         settings.setAllowUniversalAccessFromFileURLs(True)
         activity.setContentView(self.webview)
-        self.webview.setWebContentsDebuggingEnabled(True)
         self.webview.setWebViewClient(self.client)
         self.initialized = True
         self.load_url(self.url)
@@ -117,6 +129,12 @@ class NativeWebView(object):
     @run_on_ui_thread
     def show(self):
         pass
+
+    def set_user_agent(self, user_agent):
+        self.webview.set_user_agent(user_agent)
+
+    def get_user_agent(self):
+        return self.webview.get_user_agent()
 
     @run_on_ui_thread
     def load_url(self, url):

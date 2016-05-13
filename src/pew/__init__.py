@@ -239,6 +239,7 @@ class PEWMessageHandler:
         except Exception, e:
             import traceback
             logging.error(traceback.format_exc(e))
+            return False
 
         self.message_received = True
         return True
@@ -378,6 +379,9 @@ class WebUIView(NativeWebView):
             self.delegate.shutdown()
 
     def webview_should_start_load(self, webview, url, nav_type):
+        if self.protocol is not None and self.delegate is not None:
+            return not self.delegate.parse_message(url)
+
         return True
 
     def webview_did_start_load(self, webview, url=None):
