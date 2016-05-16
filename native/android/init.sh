@@ -21,6 +21,9 @@ export ANDROID_HOME=$DIR/android-sdk-$PLATFORM
 export PATH=$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools
 
 FORMAT=tgz
+if [[ "$PLATFORM" == "macosx" ]]; then
+    FORMAT=zip
+fi
 
 echo Downloading http://dl.google.com/android/android-sdk_r24.4.1-$PLATFORM.$FORMAT
 

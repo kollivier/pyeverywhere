@@ -31,7 +31,7 @@ pew_deps = {
 pew_cmds = {
     "android": [
         ["/bin/bash", "${PEW_DIR}/native/android/init.sh"],
-        ["/bin/bash", "${PEW_DIR}/native/android/build_p4a.sh"]
+        # ["/bin/bash", "${PEW_DIR}/native/android/build_p4a.sh"]
     ]
 }
 
