@@ -18,12 +18,17 @@ LAUNCH=
 if [ -f $6 ]
 then
 LAUNCH="--presplash $6"
+fi
 
+WHITELIST=
+if [ -f $7 ]
+then
+WHITELIST="--whitelist $7"
 fi
 
 cd src
 
-p4a apk --private=$4 --requirements=python2,kivy,pyjnius,openssl,android --package=$1 --name=$2 --version=$3 --orientation sensor --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
+p4a apk --private=$4 --requirements=python2,kivy,pyjnius,openssl,android --package=$1 --name=$2 --version=$3 --orientation sensor --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]
