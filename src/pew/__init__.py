@@ -304,6 +304,7 @@ class WebUIView(NativeWebView):
         self.delegate = delegate
 
         self.page_loaded = False
+        self.current_url = None
 
         # a list of JS calls made since app start so that we can do playback in a browser for testing.
         self.js_session_script = ""
@@ -339,6 +340,7 @@ class WebUIView(NativeWebView):
         Params:
             :param url: URL to load, if loading a local file be sure to use the file:// protocol
         """
+        self.current_url = url
         super(WebUIView, self).load_url(url)
 
     def show(self):
@@ -387,7 +389,9 @@ class WebUIView(NativeWebView):
     def webview_did_start_load(self, webview, url=None):
         pass
     def webview_did_finish_load(self, webview, url=None):
-        if url is None or url.startswith("file://") and "index.html" in url:
+        logging.info("Page loaded = %r, url = %r, current_url = %r" % (self.page_loaded, url, self.current_url))
+        if not self.page_loaded:
+            logging.info("Calling did finish load handler.")
             self.page_loaded = True
             if self.protocol is not None:
                 webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)

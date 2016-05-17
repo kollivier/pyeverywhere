@@ -90,12 +90,10 @@ class AndroidWebView(Widget):
     def evaluate_javascript(self, js):
         self.webview.loadUrl('javascript:' + js, None)
 
-    @run_on_ui_thread
     def get_user_agent(self):
         settings = self.webview.getSettings()
         return settings.getUserAgentString()
 
-    @run_on_ui_thread
     def set_user_agent(self, user_agent):
         settings = self.webview.getSettings()
         settings.setUserAgentString(user_agent)
@@ -104,8 +102,6 @@ class AndroidWebView(Widget):
     def create_webview(self, *args):
         self.webview = WebView(activity)
         settings = self.webview.getSettings()
-        settings.setUserAgentString(settings.getUserAgentString() + " / DentalTNTApp")
-        logging.info("User agent is %s" % settings.getUserAgentString())
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
         settings.setAllowUniversalAccessFromFileURLs(True)
