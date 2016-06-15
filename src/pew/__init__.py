@@ -347,6 +347,9 @@ class WebUIView(NativeWebView):
         """
         super(WebUIView, self).show()
 
+    def set_title(self, name):
+        self.webview.set_user_agent(self.webview.get_user_agent() + " / " + name)
+
     def call_js_function(self, function_name, *a):
         """
         Calls a JavaScript function from Python. 
@@ -396,6 +399,7 @@ class WebUIView(NativeWebView):
     
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True # make sure we don't wait forever if the page fails to load
+
 
 def get_user_dir():
     """
