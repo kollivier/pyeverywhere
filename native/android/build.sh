@@ -8,6 +8,8 @@ cd "$DIR"
 
 echo "PWD is $PWD"
 
+DIST_NAME="$2_dist"
+
 ICON=
 if [ -f $5 ]
 then
@@ -18,12 +20,17 @@ LAUNCH=
 if [ -f $6 ]
 then
 LAUNCH="--presplash $6"
+fi
 
+WHITELIST=
+if [ -f $7 ]
+then
+WHITELIST="--whitelist $7"
 fi
 
 cd src
 
-p4a apk --private=$4 --requirements=python2,kivy,pyjnius,openssl,android --package=$1 --name=$2 --version=$3 --orientation sensor --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
+p4a apk --private=$4 --requirements=python2,kivy,pyjnius,openssl,android --package=$1 --name=$2 --dist_name=$DIST_NAME --version=$3 --orientation sensor --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]
@@ -31,5 +38,5 @@ then
     mkdir bin
 fi
 
-echo "cp bin/$2-$3*.apk $START_DIR/dist/android"
-echo cp bin/$2-$3*.apk $START_DIR/dist/android
+echo "cp  ~/.local/share/python-for-android/dists/$DIST_NAME/bin/$2-$3*.apk $START_DIR/dist/android"
+cp ~/.local/share/python-for-android/dists/$DIST_NAME/bin/$2-$3*.apk $START_DIR/dist/android

@@ -160,6 +160,10 @@ def build(args):
         if "icons" in info_json and "android" in info_json["icons"]:
             icon = os.path.abspath(os.path.join("icons", "android", info_json["icons"]["android"]))
 
+        whitelist = "fakefile"
+        if "whitelist_file" in info_json and "android" in info_json["whitelist_file"]:
+            whitelist = os.path.abspath(info_json["whitelist_file"]["android"])
+
         launch = "fakefile"
         if "launch_images" in info_json and "android" in info_json["launch_images"]:
             launch = os.path.abspath(info_json["launch_images"]["android"])
@@ -174,7 +178,7 @@ def build(args):
         shutil.copytree(src_dir, build_dir)
         shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
-        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch)
+        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist)
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":
