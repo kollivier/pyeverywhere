@@ -28,9 +28,15 @@ then
 WHITELIST="--whitelist $7"
 fi
 
+DIST_DIR="$HOME/.local/share/python-for-android/dists"
+if [ "$(uname)" == "Darwin" ]; then
+    DIST_DIR="$HOME/.python-for-android/dists"
+fi
+
 cd src
 
-p4a apk --private=$4 --requirements=python2,kivy,pyjnius,openssl,android --package=$1 --name=$2 --dist_name=$DIST_NAME --version=$3 --orientation sensor --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
+p4a clean_dists
+p4a apk --private=$4 --requirements=python2,kivy,pyjnius,android,sqlite3 --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --orientation sensor --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]
@@ -38,5 +44,4 @@ then
     mkdir bin
 fi
 
-echo "cp  ~/.local/share/python-for-android/dists/$DIST_NAME/bin/$2-$3*.apk $START_DIR/dist/android"
-cp ~/.local/share/python-for-android/dists/$DIST_NAME/bin/$2-$3*.apk $START_DIR/dist/android
+cp "${DIST_DIR}/${DIST_NAME}"/bin/$2-$3*.apk "${START_DIR}"/dist/android
