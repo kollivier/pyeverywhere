@@ -1,3 +1,5 @@
+from objc_util import *
+
 app = None
 
 
@@ -7,6 +9,7 @@ def get_app():
 
 # unlike Android and wx, there is no main App class in Pythonista
 class NativePEWApp(object):
+    @on_main_thread
     def run(self):
         global app
         app = self

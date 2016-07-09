@@ -3,6 +3,8 @@ import logging
 import console
 import ui
 
+from objc_util import *
+
 
 @ui.in_background
 def show_alert(title, message=""):
@@ -35,6 +37,7 @@ class NativeWebView(object):
         self.view.name = name
         self.view.background_color = 'white'
         self.webview = ui.WebView()
+        ObjCInstance(self.webview).webView().setMediaPlaybackRequiresUserAction_(False)
         self.webview.delegate = self
         self.webview.flex = 'WH'
         self.view.add_subview(self.webview)
