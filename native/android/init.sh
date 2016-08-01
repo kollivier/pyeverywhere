@@ -50,5 +50,5 @@ fi
 
 if [ ! -d python-for-android ]
 then
-    pip install --upgrade --force-reinstall git+https://github.com/kivy/python-for-android.git
+    pip install --upgrade --force-reinstall git+https://github.com/kollivier/python-for-android.git
 fi
