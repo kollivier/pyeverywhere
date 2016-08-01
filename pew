@@ -64,11 +64,22 @@ def codesign_mac(path, identity):
             sys.exit(1)
 
 
+default_key = "default"
 cwd = os.getcwd()
 
 info_json = {}
 
 info_file = os.path.join(cwd, "project_info.json")
+
+
+def get_value_for_platform(key, platform_name, default_return=None):
+    if key in info_json:
+        if platform_name in info_json[key]:
+            return info_json[key][platform_name]
+        elif default_key in info_json[key]:
+            return info_json[key][default_key]
+
+    return default_return
 
 
 def create_android_setup_sh(info_json):
@@ -156,17 +167,10 @@ def build(args):
         src_dir = os.path.join(cwd, "src")
         build_dir = os.path.join(cwd, "build", "android")
 
-        icon = "fakefile"
-        if "icons" in info_json and "android" in info_json["icons"]:
-            icon = os.path.abspath(os.path.join("icons", "android", info_json["icons"]["android"]))
-
-        whitelist = "fakefile"
-        if "whitelist_file" in info_json and "android" in info_json["whitelist_file"]:
-            whitelist = os.path.abspath(info_json["whitelist_file"]["android"])
-
-        launch = "fakefile"
-        if "launch_images" in info_json and "android" in info_json["launch_images"]:
-            launch = os.path.abspath(info_json["launch_images"]["android"])
+        icon = os.path.abspath(get_value_for_platform("icons", "android", "fakefile"))
+        whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
+        launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
+        orientation = get_value_for_platform("orientation", "android", "sensor")
 
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
@@ -178,7 +182,7 @@ def build(args):
         shutil.copytree(src_dir, build_dir)
         shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
-        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist)
+        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation)
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":
