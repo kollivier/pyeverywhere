@@ -101,11 +101,11 @@ def start_local_server(url_root, host=HOST, port=PORT, callback=None):
     Starts a local HTTP server with the site root pointing to the directory passed in
     as url_root. This function does not return - if using this in a GUI app, make sure
     to call this in a thread. If the host and port are not passed in, they default to
-    "" and 8000, respectively.
+    "%s" and %s, respectively.
 
     If there's a callback function, it will call that once it starts the server. This is
     useful for taking an action like opening the site in a web browser once it is loaded.
-    """
+    """ % (HOST, PORT)
 
     http_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
 
