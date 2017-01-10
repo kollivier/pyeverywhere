@@ -34,15 +34,31 @@ then
 ORIENTATION="--orientation $8"
 fi
 
+REQUIREMENTS="--requirements=python2,kivy,pyjnius,android"
+if [ ! -z $9 ]
+then
+REQUIREMENTS="--requirements=$9"
+fi
+
+BUILD_TYPE=
+if [ ! -z "${10}" ]
+then
+BUILD_TYPE="--release"
+fi
+
+if [ ! -z "${11}" ]
+then
+echo "Keystore is ${11}"
+echo "keyalias is ${12}"
+KEYINFO="--keystore ${11} --signkey ${12} --keystorepw ${13}"
+fi
+
 DIST_DIR="$HOME/.local/share/python-for-android/dists"
 if [ "$(uname)" == "Darwin" ]; then
     DIST_DIR="$HOME/.python-for-android/dists"
 fi
 
-cd src
-
-p4a clean_dists
-p4a apk --private=$4 --requirements=python2,kivy,pyjnius,android,sqlite3 --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST $ORIENTATION --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere
+p4a apk --private=$4 $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST $ORIENTATION --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]

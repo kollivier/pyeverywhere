@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import getpass
 import glob
 import json
 import logging
@@ -136,13 +137,14 @@ def test(args):
     sys.exit(os.system(cmd))
 
 def run(args):
+    copy_config_file(args)
     if args.platform == "android":
         apk_name = "%s-%s-debug.apk" % (info_json["name"].replace(" ", ""), info_json["version"])
         apk_file = os.path.join(cwd, "dist", "android", apk_name)
         if not os.path.exists(apk_file):
             print("Could not find APK file to run at %s" % apk_file)
             print("Please ensure that you have performed a build and that it succeeded, and try again.")
-            sys.exit(1) 
+            sys.exit(1)
         cmd = "bash \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), apk_file, info_json["identifier"])
         print("running %s" % cmd)
         sys.exit(os.system(cmd))
@@ -160,17 +162,54 @@ def run(args):
     else:
         os.system(sys.executable + " src/main.py " + " ".join(args.args))
 
+def copy_config_file(args):
+    src_dir = os.path.join(cwd, "src")
+    local_config = os.path.join(src_dir, "local_config.py")
+    if os.path.exists(local_config):
+        os.remove(local_config)
+
+    if args.config:
+        config_path = os.path.abspath(args.config)
+        if os.path.exists(config_path):
+            shutil.copy2(config_path, os.path.join(src_dir, "local_config.py"))
+        else:
+            print("Specified config file %s not found. Exiting..." % config_path)
+            sys.exit(1)
+
 def build(args):
     returncode = 0
+    copy_config_file(args)
+
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
-        src_dir = os.path.join(cwd, "src")
         build_dir = os.path.join(cwd, "build", "android")
 
-        icon = os.path.abspath(get_value_for_platform("icons", "android", "fakefile"))
+        icon_dir = os.path.join(cwd, "icons", "android")
+        icon = os.path.join(icon_dir, get_value_for_platform("icons", "android", "fakefile"))
+        print("Icon is %s" % icon)
         whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
         launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
         orientation = get_value_for_platform("orientation", "android", "sensor")
+        requirements = get_value_for_platform("requirements", "android", "")
+        keystore = ""
+        keyalias = ""
+        keypasswd = ""
+
+        build_type = ""
+        if args.release:
+            build_type = "release"
+            signing = get_value_for_platform("codesign", "android", "")
+            keystore = os.path.abspath(signing['keystore'])
+            keyalias = signing['alias']
+            print("signing = %r" % (signing,))
+            print("keystore = %r, alias = %r" % (keystore, keyalias))
+            if 'passwd' in signing:
+                keypasswd = signing['passwd']
+            else:
+                keypasswd = getpass.getpass()
+
+        if len(requirements) > 0:
+            requirements = ",".join(requirements)
 
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
@@ -182,7 +221,7 @@ def build(args):
         shutil.copytree(src_dir, build_dir)
         shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
-        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation)
+        cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd)
         print "Running %s" % cmd
         returncode = os.system(cmd)
     if args.platform == "ios":
@@ -313,6 +352,8 @@ def main():
 
     build_opt = commands.add_parser('build', help="Build PyEverywhere binary")
     build_opt.add_argument('platform', choices=platforms, help='Platform to build project for. Choices are: %r' % (platforms,))
+    build_opt.add_argument('--release', action='store_true', help='Build the app in release mode.')
+    build_opt.add_argument('--config', help='Specify a Python config file to use when building the app.')
     build_opt.set_defaults(func=build)
 
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
@@ -325,6 +366,7 @@ def main():
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")
     run_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
+    run_opt.add_argument('--config', help='Specify a Python config file to use when running the app. For iOS and Android, this must be specified in the build step.')
     run_opt.add_argument('args', nargs=argparse.REMAINDER)
     run_opt.set_defaults(func=run)
 
