@@ -105,6 +105,8 @@ class AndroidWebView(Widget):
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
         settings.setAllowUniversalAccessFromFileURLs(True)
+        settings.setMediaPlaybackRequiresUserGesture(False)
+        settings.setDomStorageEnabled(True)
         activity.setContentView(self.webview)
         self.webview.setWebViewClient(self.client)
         self.initialized = True
