@@ -180,6 +180,7 @@ def build(args):
     returncode = 0
     copy_config_file(args)
 
+    src_dir = os.path.join(cwd, "src")
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
         build_dir = os.path.join(cwd, "build", "android")
