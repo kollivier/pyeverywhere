@@ -20,6 +20,7 @@ LAUNCH=
 if [ -f $6 ]
 then
 LAUNCH="--presplash $6"
+
 fi
 
 WHITELIST=
@@ -58,7 +59,7 @@ if [ "$(uname)" == "Darwin" ]; then
     DIST_DIR="$HOME/.python-for-android/dists"
 fi
 
-p4a apk --private=$4 $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST $ORIENTATION --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
+p4a apk --private=$4 $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=sdl2 $ICON $WHITELIST $ORIENTATION $LAUNCH --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]
