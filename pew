@@ -73,6 +73,16 @@ info_json = {}
 info_file = os.path.join(cwd, "project_info.json")
 
 
+def get_value_for_config(key, config_name, default_return=None):
+    if key in info_json:
+        if "configs" in info_json[key] and config_name in info_json[key]["configs"]:
+            return info_json[key]["configs"][config_name]
+        elif default_key in info_json[key]:
+            return info_json[key][default_key]
+
+    return default_return
+
+
 def get_value_for_platform(key, platform_name, default_return=None):
     if key in info_json:
         if platform_name in info_json[key]:
@@ -120,7 +130,7 @@ def create(args):
             print("Project already exists! Please delete or rename the existing project folder and try again.")
             sys.exit(1)
 
-        shutil.copytree(os.path.join(thisdir, "src", "template"), dir_name)
+        shutil.copytree(os.path.join(thisdir, "src", "template"))
         
         project_json_file = os.path.join(dir_name, "project_info.json")
         project_json = json.load(open(project_json_file))
@@ -169,7 +179,7 @@ def copy_config_file(args):
         os.remove(local_config)
 
     if args.config:
-        config_path = os.path.abspath(args.config)
+        config_path = os.path.abspath(os.path.join("configs", args.config + ".py"))
         if os.path.exists(config_path):
             shutil.copy2(config_path, os.path.join(src_dir, "local_config.py"))
         else:
@@ -219,7 +229,27 @@ def build(args):
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
 
-        shutil.copytree(src_dir, build_dir)
+        ignore = None
+        ignore_paths = []
+        if args.config != "":
+            ignore_dirs = get_value_for_config("ignore_dirs", args.config)
+            print("Ignore dirs specified: %r" % ignore_dirs)
+            if ignore_dirs:
+                ignore_paths = []
+                for ignore_dir in ignore_dirs:
+                    ignore_paths.append(os.path.abspath(ignore_dir))
+
+        def _logpath(path, names):
+            for ignore_dir in ignore_paths:
+                if ignore_dir in path:
+                    print("Ignoring %s" % path)
+                    return names
+            print("Copying %s" % path)
+            return []
+        ignore = _logpath
+
+        print("Copying source files to build tree, please wait...")
+        shutil.copytree(src_dir, build_dir, ignore=ignore)
         shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
         cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd)
