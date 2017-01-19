@@ -177,7 +177,7 @@ def create(args):
             print("Project already exists! Please delete or rename the existing project folder and try again.")
             sys.exit(1)
 
-        shutil.copytree(os.path.join(thisdir, "src", "template"))
+        shutil.copytree(os.path.join(thisdir, "src", "template"), dir_name)
 
         project_json_file = os.path.join(dir_name, "project_info.json")
         project_json = json.load(open(project_json_file))
