@@ -12,7 +12,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import threading
 import webbrowser
 
 from distutils.core import setup
@@ -27,7 +26,31 @@ except NameError:
 thisdir = os.path.dirname(os.path.abspath(__file__))
 srcdir = os.path.join(thisdir, 'src')
 
+config_dir = os.path.expanduser(os.path.join("~", ".pyeverywhere"))
+if not os.path.exists(config_dir):
+    os.makedirs(config_dir)
+
+config_settings = {
+    "android.root": "Path to the directory where the Android tools will be stored"
+}
+
+config_file = os.path.join(config_dir, "config.json")
+pew_config = {}
+if os.path.exists(config_file):
+    pew_config = json.load(open(config_file))
+
 android_dir = os.path.join(thisdir, "native", "android")
+
+command_env = os.environ.copy()
+
+android_root = os.path.join(config_dir, "native", "android")
+if "android.root" in pew_config:
+    android_root = pew_config['android.root']
+
+if not os.path.exists(android_root):
+    os.makedirs(android_root)
+command_env['ANDROID_ROOT'] = android_root
+
 
 platforms = [
     "android",
@@ -37,6 +60,10 @@ platforms = [
     "mac",
     "win"
 ]
+
+
+def run_command(cmd):
+    return os.system(cmd)
 
 
 def codesign_mac(path, identity):
@@ -121,6 +148,26 @@ export ANDROIDBUILDTOOLSVER=%s
 def dir_is_pew(check_dir):
     return os.path.exists(os.path.join(cwd, "project_info.json"))
 
+
+def get(args):
+    global config_settings
+    if args.name == "all":
+        for name in pew_config:
+            print("    %s: %s" % (name, pew_config[name]))
+    else:
+        print("    %s:%s" % (args.name, pew_config[args.name]))
+
+
+def set(args):
+    global pew_config
+    name = args.name
+    value = args.value
+    pew_config[name] = value
+    f = open(config_file, "w")
+    json.dump(pew_config, f)
+    f.close()
+
+
 def create(args):
     if args.name:
         safe_name = args.name.replace(" ", "")
@@ -131,20 +178,22 @@ def create(args):
             sys.exit(1)
 
         shutil.copytree(os.path.join(thisdir, "src", "template"))
-        
+
         project_json_file = os.path.join(dir_name, "project_info.json")
         project_json = json.load(open(project_json_file))
-        
+
         project_json["name"] = args.name
         project_json["identifier"] = "com.yourdomain.%s" % safe_name
-        
+
         json.dump(project_json, open(project_json_file, 'w'))
+
 
 def test(args):
     cmd = sys.executable + " src/main.py --test"
     if args.no_functional:
         cmd += " --no-functional"
-    sys.exit(os.system(cmd))
+    sys.exit(run_command(cmd))
+
 
 def run(args):
     copy_config_file(args)
@@ -157,7 +206,7 @@ def run(args):
             sys.exit(1)
         cmd = "bash \"%s\" \"%s\" \"%s\"" % (os.path.join(android_dir, "run.sh"), apk_file, info_json["identifier"])
         print("running %s" % cmd)
-        sys.exit(os.system(cmd))
+        sys.exit(run_command(cmd))
     elif args.platform == "ios":
         build(args)  # we can't run the app programmatically, so just use build to load the project.
     elif args.platform == "browser":
@@ -170,7 +219,8 @@ def run(args):
             webbrowser.open(url)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:
-        os.system(sys.executable + " src/main.py " + " ".join(args.args))
+        run_command(sys.executable + " src/main.py " + " ".join(args.args))
+
 
 def copy_config_file(args):
     src_dir = os.path.join(cwd, "src")
@@ -186,6 +236,7 @@ def copy_config_file(args):
             print("Specified config file %s not found. Exiting..." % config_path)
             sys.exit(1)
 
+
 def build(args):
     returncode = 0
     copy_config_file(args)
@@ -194,6 +245,8 @@ def build(args):
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
         build_dir = os.path.join(cwd, "build", "android")
+        if args.config != "":
+            build_dir = os.path.join(build_dir, args.config)
 
         icon_dir = os.path.join(cwd, "icons", "android")
         icon = os.path.join(icon_dir, get_value_for_platform("icons", "android", "fakefile"))
@@ -254,7 +307,7 @@ def build(args):
 
         cmd = "bash \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" " % (os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd)
         print "Running %s" % cmd
-        returncode = os.system(cmd)
+        returncode = run_command(cmd)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate")
         plist_file = os.path.join(project_dir, "Info.plist")
@@ -274,7 +327,7 @@ def build(args):
             plistlib.writePlist(plist, plist_file)
 
         project_file = os.path.join(project_dir, "Project.xcodeproj")
-        os.system("open %s" % project_file.replace(" ", "\\ "))
+        run_command("open %s" % project_file.replace(" ", "\\ "))
 
     elif args.platform in ["mac", "win"]:
         import py2app
@@ -316,7 +369,7 @@ def build(args):
               },
               app=['src/main.py'],
               data_files=data_files
-            )
+              )
 
         if sys.platform.startswith("darwin") and "codesign" in info_json:
             base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
@@ -336,17 +389,19 @@ def build(args):
             exes = ["Python"]
             for exe in exes:
                 sign_paths.append(os.path.join(base_path, 'Contents', 'MacOS', exe))
-            sign_paths.append(base_path) # the main app needs to be signed last
+            sign_paths.append(base_path)  # the main app needs to be signed last
             for path in sign_paths:
                 codesign_mac(path, info_json["codesign"]["osx"]["identity"])
 
     return returncode
+
 
 def init(args):
     """
     For now, this is just an alias for update.
     """
     update(args)
+
 
 def update(args):
     print("Copying latest dependencies into project...")
@@ -357,7 +412,7 @@ def update(args):
 
     temp_pew = os.path.join(tempdir, 'pew')
     dest_dir = os.path.join(cwd, 'src', 'pew')
-    if os.path.exists(dest_dir):
+    if os.path.exists(dest_dir) and args.platform == "pew":
         if input("This will overwrite the existing pew module. Continue? [Y/n]").lower() == "y":
             shutil.move(dest_dir, temp_pew)
 
@@ -375,8 +430,8 @@ def update(args):
             import traceback
             logging.error(traceback.format_exc(e))
 
+
 def main():
-    
     parser = argparse.ArgumentParser()
     # parser.add_argument("command", description="", help="Command to run. Acceptable commands are: %r" % commands)
     commands = parser.add_subparsers(title='commands', help='Commands to operate on PyEverywhere projects')
@@ -410,9 +465,21 @@ def main():
     up_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=update)
 
+    config_text = ""
+    for name in config_settings:
+        config_text += "    %s: %s" % (name, config_settings[name])
+    config_opt = commands.add_parser('set', help="Configure PyEverywhere settings.")
+    config_opt.add_argument('name', help='Setting to configure.')
+    config_opt.add_argument('value', help='Value for the configuration setting.')
+    config_opt.set_defaults(func=set)
+
+    get_opt = commands.add_parser('get', help="View PyEverywhere settings.")
+    get_opt.add_argument('name', help='Setting to view. Specify "all" to view all settings.')
+    get_opt.set_defaults(func=get)
+
     args = parser.parse_args()
 
-    if not args.func == create:
+    if not args.func in [create, get, set]:
         if not os.path.exists(info_file):
             print "Unable to find project info file at %s. pew cannot continue." % info_file
             sys.exit(1)
