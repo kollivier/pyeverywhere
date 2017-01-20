@@ -104,12 +104,16 @@ def get_dependencies_for_platform(platform_name):
 
             if os.path.splitext(output_file)[1] == ".zip":
                 unzip_file(output_file, output_dir)
-                
+
+
+def initialize_platform(platform_name, command_env, verbose=False):
     if platform_name in pew_cmds:
         for cmd in pew_cmds[platform_name]:
             final_cmd = []
             for arg in cmd:
                 final_cmd.append(resolve_macros(arg))
-                
-            print("Running command %r" % final_cmd)
-            subprocess.check_call(final_cmd)
+
+            if verbose:
+                print("Running command %r" % final_cmd)
+                print("Environment: %s" % (command_env,))
+            subprocess.check_call(final_cmd, env=command_env)

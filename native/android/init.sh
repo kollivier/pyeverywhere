@@ -1,7 +1,7 @@
 #!/bin/bash
 
 START_DIR=$PWD
-DIR=$PWD/native/android
+DIR=${ANDROID_ROOT}
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 echo "Dir is $DIR"
@@ -46,9 +46,4 @@ echo Downloading http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VE
 if [ ! -d apache-ant-$ANT_VERSION ]
 then
     curl --location http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
-fi
-
-if [ ! -d python-for-android ]
-then
-    pip install --upgrade --force-reinstall git+https://github.com/kollivier/python-for-android.git
 fi
