@@ -3,21 +3,17 @@ import logging
 import threading
 
 import jnius
-import kivy
 
-logging.info("Starting kivy...?")
+logging.info("Starting pew_p4a...?")
 
-from kivy.lang import Builder
-from kivy.utils import platform
-from kivy.uix.widget import Widget
-from kivy.clock import Clock
 from jnius import autoclass, JavaClass, PythonJavaClass, MetaJavaClass, java_method, JavaMethod
 from android.runnable import run_on_ui_thread
 
 WebView = autoclass('android.webkit.WebView')
 WebViewClient = autoclass('android.webkit.WebViewClient')
 PythonWebViewClient = autoclass('org.kosoftworks.pyeverywhere.PEWebViewClient')
-activity = autoclass('org.kivy.android.PythonActivity').mActivity
+PythonActivity = autoclass('org.kivy.android.PythonActivity')
+activity = PythonActivity.mActivity
 
 
 def show_alert(title, message=""):
@@ -72,7 +68,7 @@ class PEWebViewClientInterface(PythonJavaClass):
         self.delegate.webview_did_finish_load(self.webview, url)
 
 
-class AndroidWebView(Widget):
+class AndroidWebView(object):
     def __init__(self, **kwargs):
         super(AndroidWebView, self).__init__(**kwargs)
         self.initialized = False
@@ -100,14 +96,13 @@ class AndroidWebView(Widget):
 
     @run_on_ui_thread
     def create_webview(self, *args):
-        self.webview = WebView(activity)
+        self.webview = activity.mWebView  # WebView(activity)
         settings = self.webview.getSettings()
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
         settings.setAllowUniversalAccessFromFileURLs(True)
         settings.setMediaPlaybackRequiresUserGesture(False)
         settings.setDomStorageEnabled(True)
-        activity.setContentView(self.webview)
         self.webview.setWebViewClient(self.client)
         self.initialized = True
         self.load_url(self.url)

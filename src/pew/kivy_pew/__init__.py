@@ -3,8 +3,6 @@ import logging
 import android
 from android.runnable import run_on_ui_thread
 
-from kivy.app import App
-
 
 @run_on_ui_thread
 def run_on_main_thread(func, *args, **kwargs):
@@ -17,7 +15,7 @@ def get_app():
     return app
 
 
-class NativePEWApp(App):
+class NativePEWApp(object):
     def build(self):
         global app
         app = self

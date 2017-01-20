@@ -19,8 +19,6 @@ import SocketServer
 import sys
 import threading
 import time
-import unittest
-import urllib
 import urllib2
 import urlparse
 
@@ -37,7 +35,6 @@ except:
     pass
 
 try:
-    import kivy
     import jnius
     from kivy_pew import *
     platform = 'android'
