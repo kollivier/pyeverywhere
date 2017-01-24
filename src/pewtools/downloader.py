@@ -58,7 +58,3 @@ def download_file(url, output_file, max_tries=5):
             current_try += 1
         finally:
             r.close()
-
-
-
-

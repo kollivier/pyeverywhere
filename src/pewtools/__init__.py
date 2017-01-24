@@ -1,10 +1,13 @@
 import hashlib
+import logging
 import os
+import shutil
 import subprocess
 import sys
 import zipfile
 
 import downloader
+from virtualenvapi.manage import VirtualEnvironment
 
 __version__ = "0.9.1"
 
@@ -117,3 +120,32 @@ def initialize_platform(platform_name, command_env, verbose=False):
                 print("Running command %r" % final_cmd)
                 print("Environment: %s" % (command_env,))
             subprocess.check_call(final_cmd, env=command_env)
+
+
+def copy_deps_to_build(deps, build_dir, dest_dir):
+    venv_dir = os.path.join(build_dir, 'venv')
+    env = VirtualEnvironment(venv_dir)
+    env.open_or_create()
+
+    venv_site_packages = os.path.join(venv_dir, 'lib', 'python2.7', 'site-packages')
+
+    ignore_paths = []
+    for path in os.listdir(venv_site_packages):
+        ignore_paths.append(path)
+
+    print("venv ignore paths = %r" % ignore_paths)
+
+    for dep in deps:
+        env.install(dep)
+
+    for path in os.listdir(venv_site_packages):
+        if not path in ignore_paths:
+            fullpath = os.path.join(venv_site_packages, path)
+            outpath = os.path.join(dest_dir, path)
+            logging.info("Copying dependency: %s" % path)
+            if os.path.isfile(fullpath):
+                shutil.copy2(fullpath, outpath)
+            else:
+                shutil.copytree(fullpath, outpath)
+        else:
+            logging.info("Ignoring %s" % path)

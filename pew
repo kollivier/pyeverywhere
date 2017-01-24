@@ -106,6 +106,33 @@ info_json = {}
 info_file = os.path.join(cwd, "project_info.json")
 
 
+def copy_files(src_dir, build_dir, ignore_paths):
+    def _logpath(path, names):
+        for ignore_dir in ignore_paths:
+            if ignore_dir in path:
+                print("Ignoring %s" % path)
+                return names
+        print("Copying %s" % path)
+        return []
+    ignore = _logpath
+
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+
+    print("Copying source files to build tree, please wait...")
+    shutil.copytree(src_dir, build_dir, ignore=ignore)
+
+    pew_src_dir = os.path.join(thisdir, "src", "pew")
+    pew_dest_dir = os.path.join(build_dir, "pew")
+    # For now, we want to allow developers to use their own customized pew module
+    # until we offer more advanced configuration options. If they don't though,
+    # just copy ours over.
+    if not os.path.exists(pew_dest_dir):
+        shutil.copytree(pew_src_dir, pew_dest_dir)
+
+    shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
+
+
 def get_value_for_config(key, config_name, default_return=None):
     if key in info_json:
         if "configs" in info_json[key] and config_name in info_json[key]["configs"]:
@@ -247,9 +274,20 @@ def build(args):
     copy_config_file(args)
 
     src_dir = os.path.join(cwd, "src")
+    build_dir = os.path.join(cwd, "build", args.platform)
+    requirements = get_value_for_platform("requirements", args.platform, [])
+    requirements = requirements + get_value_for_platform("requirements", "common", [])
+
+    ignore_paths = []
+    if args.config != "":
+        ignore_dirs = get_value_for_config("ignore_dirs", args.config)
+        print("Ignore dirs specified: %r" % ignore_dirs)
+        if ignore_dirs:
+            for ignore_dir in ignore_dirs:
+                ignore_paths.append(os.path.abspath(ignore_dir))
+
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
-        build_dir = os.path.join(cwd, "build", "android")
         if args.config and args.config.strip() != "":
             build_dir = os.path.join(build_dir, args.config)
 
@@ -259,7 +297,7 @@ def build(args):
         whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
         launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
         orientation = get_value_for_platform("orientation", "android", "sensor")
-        requirements = get_value_for_platform("requirements", "android", "")
+
         keystore = ""
         keyalias = ""
         keypasswd = ""
@@ -287,42 +325,17 @@ def build(args):
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
 
-        ignore = None
-        ignore_paths = []
-        if args.config != "":
-            ignore_dirs = get_value_for_config("ignore_dirs", args.config)
-            print("Ignore dirs specified: %r" % ignore_dirs)
-            if ignore_dirs:
-                ignore_paths = []
-                for ignore_dir in ignore_dirs:
-                    ignore_paths.append(os.path.abspath(ignore_dir))
-
-        def _logpath(path, names):
-            for ignore_dir in ignore_paths:
-                if ignore_dir in path:
-                    print("Ignoring %s" % path)
-                    return names
-            print("Copying %s" % path)
-            return []
-        ignore = _logpath
-
-        print("Copying source files to build tree, please wait...")
-        shutil.copytree(src_dir, build_dir, ignore=ignore)
-        shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
-
-        pew_src_dir = os.path.join(thisdir, "src", "pew")
-        pew_dest_dir = os.path.join(build_dir, "pew")
-        # For now, we want to allow developers to use their own customized pew module
-        # until we offer more advanced configuration options. If they don't though,
-        # just copy ours over.
-        if not os.path.exists(pew_dest_dir):
-            shutil.copytree(pew_src_dir, pew_dest_dir)
+        copy_files(src_dir, build_dir, ignore_paths)
 
         cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd]
         returncode = run_command(cmd)
     if args.platform == "ios":
-        project_dir = os.path.join(cwd, "native", "ios", "PythonistaProjectTemplate")
-        plist_file = os.path.join(project_dir, "Info.plist")
+        project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate")
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
+        project_build_dir = os.path.join(build_dir, os.path.basename(project_dir))
+        shutil.copytree(project_dir, project_build_dir)
+        plist_file = os.path.join(build_dir, "PythonistaAppTemplate", "Info.plist")
         if os.path.exists(plist_file):
             version_short = info_json["version"].split(".")
             version_short = ".".join(version_short[:3])
@@ -338,7 +351,27 @@ def build(args):
 
             plistlib.writePlist(plist, plist_file)
 
-        project_file = os.path.join(project_dir, "Project.xcodeproj")
+        files_dir = os.path.join(project_build_dir, "Script")
+        copy_files(src_dir, files_dir, ignore_paths)
+
+        project_file = os.path.join(project_build_dir, "PythonistaAppTemplate.xcodeproj")
+        config_file = os.path.join(project_file, "project.pbxproj")
+
+        # FIXME: This currently only works for pure-Python modules.
+        pewtools.copy_deps_to_build(requirements, build_dir, files_dir)
+
+        if os.path.exists(config_file):
+            f = open(config_file, 'rb')
+            config = f.read()
+            f.close()
+
+            config = config.replace("My App", info_json["name"])
+            f = open(config_file, 'wb')
+            f.write(config)
+            f.close()
+        else:
+            print("Unable to update XCode project config file. You may need to manually change some settings.")
+
         run_command(["open", project_file.replace(" ", "\\ ")])
 
     elif args.platform in ["mac", "win"]:
