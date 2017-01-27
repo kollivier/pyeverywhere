@@ -317,6 +317,8 @@ def build(args):
 
         if len(requirements) > 0:
             requirements = ",".join(requirements)
+        else:
+            requirements = ""
 
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
