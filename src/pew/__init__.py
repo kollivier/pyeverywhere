@@ -44,14 +44,23 @@ except Exception, e:
     logging.warning(traceback.format_exc(e))
 
 try:
-    from wxpy import *
-    # Match the platform names used for pew commands for consistency
-    if sys.platform == "darwin":
-        platform = "mac"
-    elif sys.platform.startswith("win"):
-        platform = "win"
-    else:
-        platform = sys.platform
+    from pyobjc_pew import *
+    platform = 'mac'
+except Exception, e:
+    import traceback
+    logging.warning("Couldn't import pyobjc WebView")
+    logging.warning("Reason: %s" % traceback.format_exc(e))
+
+try:
+    if platform is None:
+        from wxpy import *
+        # Match the platform names used for pew commands for consistency
+        if sys.platform == "darwin":
+            platform = "mac"
+        elif sys.platform.startswith("win"):
+            platform = "win"
+        else:
+            platform = sys.platform
 except Exception, e:
     pass
 
@@ -78,19 +87,36 @@ def get_app_name():
     return app_name
 
 
+message_thread = None
 message_delegate = None
+
+
 def start_message_server(delegate, host=HOST, port=MSG_PORT):
     """
     Messages sent to the server at the specified host and port will be parsed as URLs
     and converted to Python methods called upon the delegate object, which must be a
     PEWMessageHandler-derived object.
     """
+
+    global message_thread
+    message_thread = PEWThread(target=start_message_server_thread, args=(delegate, host, port))
+    message_thread.daemon = True
+    message_thread.start()
+
+
+def start_message_server_thread(delegate, host=HOST, port=MSG_PORT):
     from BaseHTTPServer import HTTPServer
     global message_delegate
     message_delegate = delegate
     server = HTTPServer((host, port), PEWMessageRequestHandler)
-    logging.info("message server initialized")
-    server.serve_forever()
+    logging.info("message server initialized at http://%s:%s/" % (host, port))
+    try:
+        server.serve_forever()
+    except Exception, e:
+        import traceback
+        logging.info("Server disconnected")
+        logging.info("Reason: %s" % traceback.format_exc(e))
+    logging.info("Finished.")
 
 
 def start_local_server(url_root, host=HOST, port=PORT, callback=None):
@@ -139,7 +165,8 @@ class PEWMessageRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         global message_delegate
-        if message_delegate and message_delegate.parse_message(self.path):
+        logging.info("message received")
+        if message_delegate and run_on_main_thread(message_delegate.parse_message, self.path):
             self.send_response(200)
         else:
             self.send_response(500)
@@ -307,14 +334,14 @@ class WebUIView(NativeWebView):
         self.js_session_script = ""
 
         self.load_url(url)
-    
+
     def _wait_for_js_value(self, variable, timeout=1):
         """
         Waits for the UI to send back the requested variable. Returns the variable
         if retrieved before timeout, otherwise throws a PEWTimeoutError.
-        
+
         Params:
-            :param variable: variable whose value we are trying to retrieve 
+            :param variable: variable whose value we are trying to retrieve
             :param timeout: time in seconds to wait before timing out
         """
         total_time = 0
@@ -388,6 +415,7 @@ class WebUIView(NativeWebView):
 
     def webview_did_start_load(self, webview, url=None):
         pass
+
     def webview_did_finish_load(self, webview, url=None):
         logging.info("Page loaded = %r, url = %r, current_url = %r" % (self.page_loaded, url, self.current_url))
         if not self.page_loaded:
@@ -397,9 +425,9 @@ class WebUIView(NativeWebView):
                 webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
             if self.delegate:
                 self.delegate.load_complete()
-    
+
     def webview_did_fail_load(self, webview, error_code, error_msg):
-        self.page_loaded = True # make sure we don't wait forever if the page fails to load
+        self.page_loaded = True  # make sure we don't wait forever if the page fails to load
 
 
 def get_user_dir():
@@ -409,8 +437,8 @@ def get_user_dir():
     return os.getenv('EXTERNAL_STORAGE') or os.path.expanduser("~")
 
 def get_user_path(app_name="python"):
-    """ 
-    Returns the folder where user data can be stored. 
+    """
+    Returns the folder where user data can be stored.
     """
     global platform
     root = get_user_dir()
