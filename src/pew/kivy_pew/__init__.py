@@ -1,7 +1,7 @@
 import logging
+import time
 
-import android
-from android.runnable import run_on_ui_thread
+from runnable import run_on_ui_thread
 
 
 @run_on_ui_thread
@@ -22,6 +22,11 @@ class NativePEWApp(object):
         self.setUp()
         logging.info("starting app...")
         return self.get_main_window().webview
+
+    def run(self):
+        self.build()
+        while True:
+            time.sleep(0.05)
 
     def shutdown(self):
         pass  # I don't think this is supported natively with Kivy

@@ -7,7 +7,7 @@ import jnius
 logging.info("Starting pew_p4a...?")
 
 from jnius import autoclass, JavaClass, PythonJavaClass, MetaJavaClass, java_method, JavaMethod
-from android.runnable import run_on_ui_thread
+from runnable import run_on_ui_thread
 
 WebView = autoclass('android.webkit.WebView')
 WebViewClient = autoclass('android.webkit.WebViewClient')
@@ -66,11 +66,12 @@ class PEWebViewClientInterface(PythonJavaClass):
     def pageLoadComplete(self, view, url):
         logging.debug("onPageFinished called with url %s" % url)
         self.delegate.webview_did_finish_load(self.webview, url)
+        activity.removeLoadingScreen()
 
 
 class AndroidWebView(object):
     def __init__(self, **kwargs):
-        super(AndroidWebView, self).__init__(**kwargs)
+        super(AndroidWebView, self).__init__()
         self.initialized = False
         self.webview = None
         self.client = kwargs['client']
@@ -96,7 +97,7 @@ class AndroidWebView(object):
 
     @run_on_ui_thread
     def create_webview(self, *args):
-        self.webview = activity.mWebView  # WebView(activity)
+        self.webview = PythonActivity.mWebView  # WebView(activity)
         settings = self.webview.getSettings()
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
