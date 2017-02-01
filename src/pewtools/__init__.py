@@ -24,9 +24,9 @@ dir_macros = {
 pew_deps = {
     "ios": {
         "XCodeTemplate": {
-            "url": "%s/pythonista/1.6beta/PythonistaProjectTemplate.zip" % downloads_root_url,
+            "url": "https://github.com/kollivier/PythonistaAppTemplate/archive/master.zip",
             "dest_dir": "${PROJECT_DIR}/native/ios",
-            "checksum": "26c1006d726d46c19579b75eaa6af06a"
+            "checksum": "5854ef7719b4c7bfab0b08052025e3ff"
         }
     }
 }
@@ -87,7 +87,7 @@ def get_dependencies_for_platform(platform_name):
             output_file = os.path.join(output_dir, basename)
             print("output file = %s" % output_file)
             needs_download = True
-            if os.path.exists(output_file):
+            if os.path.exists(output_file) and "checksum" in dep:
                 checksum = get_checksum_for_file(output_file)
                 if checksum == dep["checksum"]:
                     needs_download = False

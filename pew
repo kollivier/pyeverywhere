@@ -18,6 +18,9 @@ from distutils.core import setup
 
 import pewtools
 
+if 'darwin' in sys.platform:
+    import pbxproj
+
 try:
     input = raw_input
 except NameError:
@@ -332,12 +335,12 @@ def build(args):
         cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd]
         returncode = run_command(cmd)
     if args.platform == "ios":
-        project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate")
+        project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
         project_build_dir = os.path.join(build_dir, os.path.basename(project_dir))
         shutil.copytree(project_dir, project_build_dir)
-        plist_file = os.path.join(build_dir, "PythonistaAppTemplate", "Info.plist")
+        plist_file = os.path.join(project_build_dir, "PythonistaAppTemplate", "Info.plist")
         if os.path.exists(plist_file):
             version_short = info_json["version"].split(".")
             version_short = ".".join(version_short[:3])
@@ -358,6 +361,19 @@ def build(args):
 
         project_file = os.path.join(project_build_dir, "PythonistaAppTemplate.xcodeproj")
         config_file = os.path.join(project_file, "project.pbxproj")
+
+        if "codesign" in info_json and "ios" in info_json["codesign"]:
+            ios_codesign = info_json["codesign"]["ios"]
+            project = pbxproj.XcodeProject.load(config_file)
+            # Don't use the pre-defined app icon
+            project.remove_flags('ASSETCATALOG_COMPILER_APPICON_NAME', 'AppIcon')
+
+            # TODO: Add support for manual signing
+            for target in project.objects.get_targets():
+                project_root = project.objects[project.rootObject]
+                project_root.set_provisioning_style('Automatic', target)
+                project_root.attributes.TargetAttributes[target.get_id()]["DevelopmentTeam"] = ios_codesign["development_team"]
+            project.save()
 
         # FIXME: This currently only works for pure-Python modules.
         pewtools.copy_deps_to_build(requirements, build_dir, files_dir)
