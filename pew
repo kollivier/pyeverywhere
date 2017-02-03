@@ -475,19 +475,6 @@ def update(args):
     global command_env, verbose
     pewtools.initialize_platform(args.platform, command_env, verbose=verbose)
 
-    temp_pew = os.path.join(tempdir, 'pew')
-    dest_dir = os.path.join(cwd, 'src', 'pew')
-    if os.path.exists(dest_dir) and args.platform == "pew":
-        if input("This will overwrite the existing pew module. Continue? [Y/n]").lower() == "y":
-            shutil.move(dest_dir, temp_pew)
-
-    try:
-        if not os.path.exists(dest_dir):
-            shutil.copytree(os.path.join(srcdir, 'pew'), dest_dir)
-    except Exception, e:
-        if os.path.exists(temp_pew):
-            shutil.move(temp_pew, dest_dir)
-
     if os.path.exists(tempdir):
         try:
             shutil.rmtree(tempdir)
