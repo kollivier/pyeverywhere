@@ -5,6 +5,12 @@ import ui
 
 from objc_util import *
 
+NSURLRequest = ObjCClass('NSURLRequest')
+WKWebView = ObjCClass('WKWebView')
+WKWebViewConfiguration = ObjCClass('WKWebViewConfiguration')
+
+USE_WKWEBKIT = False
+
 
 @ui.in_background
 def show_alert(title, message=""):
@@ -36,17 +42,40 @@ class NativeWebView(object):
         self.view = ui.View()
         self.view.name = name
         self.view.background_color = 'white'
-        self.webview = ui.WebView()
-        ObjCInstance(self.webview).webView().setMediaPlaybackRequiresUserAction_(False)
-        self.webview.delegate = self
-        self.webview.flex = 'WH'
-        self.view.add_subview(self.webview)
+        if USE_WKWEBKIT:
+            self.nativeView = ObjCInstance(self.view._objc_ptr)
+            self.config = WKWebViewConfiguration.new().autorelease()
+            self.config.requiresUserActionForMediaPlayback = False
+            self.webview = WKWebView.alloc().initWithFrame_configuration_(self.nativeView.bounds(), self.config)
+
+            # self.webview = WKWebView.new().autorelease()
+            flex_width, flex_height = (1 << 1), (1 << 4)
+            self.webview.setAutoresizingMask_(flex_width | flex_height)
+            self.nativeView.addSubview_(self.webview)
+        else:
+            self.webview = ui.WebView()
+            ObjCInstance(self.webview).webView().setMediaPlaybackRequiresUserAction_(False)
+            self.webview.delegate = self
+            self.webview.flex = 'WH'
+            self.view.add_subview(self.webview)
 
     def show(self):
         self.view.present('fullscreen', hide_title_bar=True)
 
+    @on_main_thread
     def load_url(self, url):
-        self.webview.load_url(url)
+        if USE_WKWEBKIT:
+            if url.lower().startswith("file://"):
+                urldir = url
+                lastslash = url.rfind('/')
+                lastpart = url[lastslash:]
+                if len(lastpart) > 0 and lastpart.find(".") != -1:
+                    urldir = url[:lastslash]
+                self.webview.loadFileURL_allowingReadAccessToURL_(nsurl(url), nsurl(urldir))
+            else:
+                self.webview.loadRequest_(NSURLRequest.requestWithURL_(nsurl(url)))
+        else:
+            self.webview.load_url(url)
 
     def get_user_agent(self):
         return ""
@@ -55,7 +84,10 @@ class NativeWebView(object):
         pass
 
     def evaluate_javascript(self, js):
-        self.webview.evaluate_javascript(js)
+        if USE_WKWEBKIT:
+            self.webview.evaluateJavaScript_completionHandler_(js, 0)
+        else:
+            self.webview.evaluate_javascript(js)
 
     def webview_should_start_load(self, webview, url, nav_type):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
