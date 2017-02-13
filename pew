@@ -125,6 +125,10 @@ def copy_files(src_dir, build_dir, ignore_paths):
     print("Copying source files to build tree, please wait...")
     shutil.copytree(src_dir, build_dir, ignore=ignore)
 
+    shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
+
+
+def copy_pew_module(build_dir):
     pew_src_dir = os.path.join(thisdir, "src", "pew")
     pew_dest_dir = os.path.join(build_dir, "pew")
     # For now, we want to allow developers to use their own customized pew module
@@ -132,8 +136,6 @@ def copy_files(src_dir, build_dir, ignore_paths):
     # just copy ours over.
     if not os.path.exists(pew_dest_dir):
         shutil.copytree(pew_src_dir, pew_dest_dir)
-
-    shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
 
 def get_value_for_config(key, config_name, default_return=None):
@@ -331,6 +333,7 @@ def build(args):
             os.makedirs(parent_dir)
 
         copy_files(src_dir, build_dir, ignore_paths)
+        copy_pew_module(build_dir)
 
         cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd]
         returncode = run_command(cmd)
@@ -349,22 +352,53 @@ def build(args):
             plist['CFBundleName'] = plist['CFBundleDisplayName'] = info_json["name"]
             plist['CFBundleVersion'] = info_json["version"]
             plist['CFBundleShortVersionString'] = version_short
+            plist['UIStatusBarHidden'] = get_value_for_platform("hide_status_bar", "ios", True)
+            launch = os.path.abspath(get_value_for_platform("launch_images", "ios", "fakefile"))
+            if os.path.exists(launch):
+                del plist['UILaunchStoryboardName']
             if "icons" in info_json and "ios" in info_json["icons"]:
                 icons = info_json["icons"]["ios"]
                 if len(icons) > 0:
                     plist['CFBundleIconFiles'] = icons
 
+            orientation_value = get_value_for_platform("orientation", "ios", "both")
+            orientations = [orientation_value]
+            if orientation_value == 'all' or orientation_value == 'sensor':
+                orientations = ['landscape', 'portrait']
+            ios_orientations = []
+            for orientation in orientations:
+                if orientation == 'landscape':
+                    ios_orientations.extend(['UIInterfaceOrientationLandscapeLeft', 'UIInterfaceOrientationLandscapeRight'])
+                if orientation == 'portrait':
+                    ios_orientations.extend(['UIInterfaceOrientationPortrait', 'UIInterfaceOrientationPortraitUpsideDown'])
+
+            plist['UISupportedInterfaceOrientations'] = ios_orientations
+            plist['UISupportedInterfaceOrientations~ipad'] = ios_orientations
+
             plistlib.writePlist(plist, plist_file)
 
-        files_dir = os.path.join(project_build_dir, "Script")
-        copy_files(src_dir, files_dir, ignore_paths)
+        dest_dir = os.path.join(project_build_dir, "Script")
+        files_src_dir = os.path.join(src_dir, "files")
+        script_ignore_paths = ignore_paths + [files_src_dir]
+        copy_files(src_dir, dest_dir, script_ignore_paths)
+        copy_pew_module(dest_dir)
+        files_dest_dir = os.path.join(project_build_dir, "files")
+        copy_files(files_src_dir, files_dest_dir, ignore_paths)
 
         project_file = os.path.join(project_build_dir, "PythonistaAppTemplate.xcodeproj")
         config_file = os.path.join(project_file, "project.pbxproj")
+        project = pbxproj.XcodeProject.load(config_file)
+
+        for icon_file in glob.glob(os.path.join("icons", "ios", "*")):
+            icon_path = os.path.abspath(icon_file)
+            icon_filename = os.path.basename(icon_file)
+            dest_path = os.path.join(project_build_dir, icon_filename)
+            shutil.copy(icon_path, dest_path)
+            project.add_file(icon_filename, force=False)
 
         if "codesign" in info_json and "ios" in info_json["codesign"]:
             ios_codesign = info_json["codesign"]["ios"]
-            project = pbxproj.XcodeProject.load(config_file)
+
             # Don't use the pre-defined app icon
             project.remove_flags('ASSETCATALOG_COMPILER_APPICON_NAME', 'AppIcon')
 
@@ -373,10 +407,10 @@ def build(args):
                 project_root = project.objects[project.rootObject]
                 project_root.set_provisioning_style('Automatic', target)
                 project_root.attributes.TargetAttributes[target.get_id()]["DevelopmentTeam"] = ios_codesign["development_team"]
-            project.save()
+        project.save()
 
         # FIXME: This currently only works for pure-Python modules.
-        pewtools.copy_deps_to_build(requirements, build_dir, files_dir)
+        pewtools.copy_deps_to_build(requirements, build_dir, dest_dir)
 
         if os.path.exists(config_file):
             f = open(config_file, 'rb')
