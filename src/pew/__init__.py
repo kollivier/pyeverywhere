@@ -31,8 +31,10 @@ try:
     import ui
     from pythonista import *
     platform = 'ios'
-except:
-    pass
+except Exception, e:
+    import traceback
+    logging.warning("Couldn't import pythonista")
+    logging.warning("Reason: %s" % traceback.format_exc(e))
 
 try:
     import jnius
@@ -96,12 +98,15 @@ def start_message_server(delegate, host=HOST, port=MSG_PORT):
     Messages sent to the server at the specified host and port will be parsed as URLs
     and converted to Python methods called upon the delegate object, which must be a
     PEWMessageHandler-derived object.
+
+    Returns the root URL to the started server.
     """
 
     global message_thread
     message_thread = PEWThread(target=start_message_server_thread, args=(delegate, host, port))
     message_thread.daemon = True
     message_thread.start()
+    return "http://%s:%s/" % (host, port)
 
 
 def start_message_server_thread(delegate, host=HOST, port=MSG_PORT):
