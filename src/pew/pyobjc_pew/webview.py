@@ -27,11 +27,6 @@ class WebViewDelegate(AppKit.NSObject):
 
     def webView_didFinishLoadForFrame_(self, webview, frame):
         print("self.webview = %r" % self.webview)
-        if frame == frame.findFrameNamed_("_top"):
-            scriptObject = webview.windowScriptObject()
-            scriptObject.setValue_forKey_(self, "PEWApp")
-            scriptObject.evaluateWebScript_("console = { log: function(msg) { window.PEWApp.consoleLog_(msg); } }")
-
         self.webview.webview_did_finish_load(self.webview)
 
 
