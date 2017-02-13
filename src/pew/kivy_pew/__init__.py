@@ -1,5 +1,6 @@
 import logging
 import time
+import urllib
 
 from runnable import run_on_ui_thread
 
@@ -13,6 +14,10 @@ app = None
 
 def get_app():
     return app
+
+
+def get_resource_url(resource_path):
+    return "file:///android_asset/" + urllib.quote(resource_path)
 
 
 class NativePEWApp(object):
