@@ -170,7 +170,6 @@ class PEWMessageRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         global message_delegate
-        logging.info("message received")
         if message_delegate and run_on_main_thread(message_delegate.parse_message, self.path):
             self.send_response(200)
         else:
@@ -214,7 +213,6 @@ class PEWMessageHandler:
         Processes a message received from the JavaScript bridge and calls the
         corresponding Python delegate method. Internal use only.
         """
-        logging.debug("parsing url: %r" % (url,))
 
         parts = urlparse.urlparse(url)
 
@@ -237,7 +235,6 @@ class PEWMessageHandler:
             args = query.split("&")
             for arg in args:
                 arg = urllib2.unquote(arg.encode('ascii'))
-                logging.debug("arg = %s" % arg)
                 #arg = arg.replace("\\", "\\\\")
                 #arg = arg.replace("\\u", "\u")
                 arg = arg.decode('utf-8')
@@ -261,7 +258,6 @@ class PEWMessageHandler:
         else:
             command = "self.delegate.%s" % func_name
 
-        logging.debug("calling: %s" % command)
         try:
             function = eval(command)
             function(*func_args, **func_kwargs)
@@ -402,7 +398,6 @@ class WebUIView(NativeWebView):
         js = "%s(%s);" % (function_name, ','.join(args))
         self.js_session_script += js + "\n"
 
-        logging.debug("calling JS: %s" % js)
         self.evaluate_javascript(js)
 
     def get_js_session_script(self):
@@ -422,9 +417,8 @@ class WebUIView(NativeWebView):
         pass
 
     def webview_did_finish_load(self, webview, url=None):
-        logging.info("Page loaded = %r, url = %r, current_url = %r" % (self.page_loaded, url, self.current_url))
         if not self.page_loaded:
-            logging.info("Calling did finish load handler.")
+            logging.info("Page loaded = %r, url = %r, current_url = %r" % (self.page_loaded, url, self.current_url))
             self.page_loaded = True
             if self.protocol is not None:
                 webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
