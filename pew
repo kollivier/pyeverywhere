@@ -46,12 +46,20 @@ android_dir = os.path.join(thisdir, "native", "android")
 
 command_env = os.environ.copy()
 
-android_root = os.path.join(config_dir, "native", "android")
+default_android_root = os.path.abspath(os.path.join(os.path.expanduser("~"), ".pyeverywhere", "native", "android"))
+android_root = default_android_root
 if "android.root" in pew_config:
     android_root = pew_config['android.root']
 
 if not os.path.exists(android_root):
-    os.makedirs(android_root)
+    try:
+        os.makedirs(android_root)
+    except:
+        print("Unable to create android root, trying default...")
+        android_root = default_android_root
+        if not os.path.exists(android_root):
+            os.makedirs(android_root)
+
 command_env['ANDROID_ROOT'] = android_root
 
 verbose = False
@@ -65,6 +73,26 @@ platforms = [
     "mac",
     "win"
 ]
+
+
+from StringIO import StringIO
+import struct
+
+
+def is_png(data):
+    return (data[:8] == '\211PNG\r\n\032\n'and (data[12:16] == 'IHDR'))
+
+
+def get_image_info(filename):
+    f = open(filename, 'rb')
+    data = f.read(25)
+    if is_png(data):
+        w, h = struct.unpack('>LL', data[16:24])
+        width = int(w)
+        height = int(h)
+    else:
+        raise Exception('not a png image')
+    return width, height
 
 
 def run_command(cmd):
@@ -333,7 +361,13 @@ def build(args):
             os.makedirs(parent_dir)
 
         copy_files(src_dir, build_dir, ignore_paths)
+        venv_dir = os.path.join(build_dir, "venv")
+        if not os.path.exists(venv_dir):
+            os.makedirs(venv_dir)
+        pewtools.copy_deps_to_build(info_json["packages"], venv_dir, build_dir)
         copy_pew_module(build_dir)
+
+        shutil.rmtree(venv_dir)
 
         cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd]
         returncode = run_command(cmd)
@@ -353,18 +387,51 @@ def build(args):
             plist['CFBundleVersion'] = info_json["version"]
             plist['CFBundleShortVersionString'] = version_short
             plist['UIStatusBarHidden'] = get_value_for_platform("hide_status_bar", "ios", True)
-            launch = os.path.abspath(get_value_for_platform("launch_images", "ios", "fakefile"))
-            if os.path.exists(launch):
-                del plist['UILaunchStoryboardName']
-            if "icons" in info_json and "ios" in info_json["icons"]:
-                icons = info_json["icons"]["ios"]
-                if len(icons) > 0:
-                    plist['CFBundleIconFiles'] = icons
+            
+            # These are needed because the Python libraries contain references to
+            # libs which need permissions. 
+            plist['NSCalendarsUsageDescription'] = "This app requires access to your calendar information."
+            plist['NSPhotoLibraryUsageDescription'] = "This app requires access to your photo library."
+            plist['NSBluetoothPeripheralUsageDescription'] = "This app requires access to a bluetooth peripheral."
+
+            icons = get_value_for_platform("icons", "ios", [])
+            if len(icons) > 0:
+                plist['CFBundleIconFiles'] = icons
 
             orientation_value = get_value_for_platform("orientation", "ios", "both")
             orientations = [orientation_value]
             if orientation_value == 'all' or orientation_value == 'sensor':
                 orientations = ['landscape', 'portrait']
+            else:
+                plist['UIRequiresFullScreen'] = True
+
+            launch_images = get_value_for_platform("launch_images", "ios", [])
+            if len(launch_images) > 0:
+                del plist['UILaunchStoryboardName']
+                images = []
+                for image in launch_images:
+                    image_path = os.path.abspath(os.path.join("icons", "ios", image))
+                    width, height = get_image_info(image_path)
+                    orientation = 'Portrait'
+
+                    size = '{%d, %d}' % (width, height)
+                    if width > height:
+                        orientation = 'Landscape'
+                        # The dimensions for the ImageSize must be specified as if the
+                        # image was portrait, even when it's a landscape image.
+                        size = '{%d, %d}' % (height, width)
+                    filename = os.path.basename(image_path)
+                    basename = os.path.splitext(filename)[0]
+
+                    image_keys = {
+                        'UILaunchImageMinimumOSVersion': '7.0',
+                        'UILaunchImageOrientation': orientation,
+                        'UILaunchImageName': basename,
+                        'UILaunchImageSize': size
+                    }
+                    images.append(image_keys)
+                plist['UILaunchImages'] = images
+
             ios_orientations = []
             for orientation in orientations:
                 if orientation == 'landscape':
@@ -400,6 +467,7 @@ def build(args):
             ios_codesign = info_json["codesign"]["ios"]
 
             # Don't use the pre-defined app icon
+            project.remove_flags('PRODUCT_BUNDLE_IDENTIFIER', 'com.omz-software.PythonistaAppTemplate')
             project.remove_flags('ASSETCATALOG_COMPILER_APPICON_NAME', 'AppIcon')
 
             # TODO: Add support for manual signing
