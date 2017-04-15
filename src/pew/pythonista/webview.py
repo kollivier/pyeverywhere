@@ -5,7 +5,10 @@ import ui
 
 from objc_util import *
 
+NSURLCache = ObjCClass('NSURLCache')
 NSURLRequest = ObjCClass('NSURLRequest')
+NSUserDefaults = ObjCClass('NSUserDefaults')
+UIColor = ObjCClass('UIColor')
 WKWebView = ObjCClass('WKWebView')
 WKWebViewConfiguration = ObjCClass('WKWebViewConfiguration')
 
@@ -41,7 +44,7 @@ class NativeWebView(object):
     def __init__(self, name="WebView", size=None):
         self.view = ui.View()
         self.view.name = name
-        self.view.background_color = 'white'
+        self.view.background_color = 'black'
         if USE_WKWEBKIT:
             self.nativeView = ObjCInstance(self.view._objc_ptr)
             self.config = WKWebViewConfiguration.new().autorelease()
@@ -53,8 +56,18 @@ class NativeWebView(object):
             self.webview.setAutoresizingMask_(flex_width | flex_height)
             self.nativeView.addSubview_(self.webview)
         else:
+            cache = NSURLCache.alloc().initWithMemoryCapacity_diskCapacity_diskPath_(0, 0, None)
+            NSURLCache.setSharedURLCache_(cache)
+
+            NSUserDefaults.standardUserDefaults().setInteger_forKey_(0, "WebKitCacheModelPreferenceKey")
+            NSUserDefaults.standardUserDefaults().synchronize()
+            # NSUserDefaults.standardUserDefaults().setBool_forKey_(False, "WebKitDiskImageCacheEnabled")
+            # //    [[NSUserDefaults standardUserDefaults] setBool:NO forKey:@"WebKitOfflineWebApplicationCacheEnabled"];
             self.webview = ui.WebView()
-            ObjCInstance(self.webview).webView().setMediaPlaybackRequiresUserAction_(False)
+            self.nativeView = ObjCInstance(self.webview).webView()
+            self.nativeView.setMediaPlaybackRequiresUserAction_(False)
+            self.nativeView.backgroundColor = UIColor.colorWithRed_green_blue_alpha_(0.0, 0.0, 0.0, 1.0)
+            self.nativeView.setOpaque_(False)
             self.webview.delegate = self
             self.webview.flex = 'WH'
             self.view.add_subview(self.webview)
@@ -66,6 +79,9 @@ class NativeWebView(object):
     def load_url(self, url):
         if USE_WKWEBKIT:
             if url.lower().startswith("file://"):
+                # Sadly, this does not appear to work. I'm leaving the code in place
+                # in case someone can figure this out, but so far all the googling
+                # I've done suggests loadFileURL is at least somewhat broken.
                 urldir = url
                 lastslash = url.rfind('/')
                 lastpart = url[lastslash:]
@@ -76,6 +92,9 @@ class NativeWebView(object):
                 self.webview.loadRequest_(NSURLRequest.requestWithURL_(nsurl(url)))
         else:
             self.webview.load_url(url)
+
+    def reload(self):
+        self.webview.reload()
 
     def get_user_agent(self):
         return ""
