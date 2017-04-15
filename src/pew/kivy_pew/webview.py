@@ -52,6 +52,7 @@ class PEWebViewClientInterface(PythonJavaClass):
     def __init__(self, delegate):
         self.delegate = delegate
         self.webview = None
+        self.load_complete = False
         super(PEWebViewClientInterface, self).__init__()
 
     def setWebView(self, webview):
@@ -59,14 +60,14 @@ class PEWebViewClientInterface(PythonJavaClass):
 
     @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)Z')
     def shouldLoadURL(self, view, url):
-        logging.info("shouldOverrideUrlLoading called with url %s" % url)
         return not self.delegate.webview_should_start_load(self.webview, url, None)
 
     @java_method('(Landroid/webkit/WebView;Ljava/lang/String;)V')
     def pageLoadComplete(self, view, url):
-        logging.debug("onPageFinished called with url %s" % url)
-        self.delegate.webview_did_finish_load(self.webview, url)
-        activity.removeLoadingScreen()
+        if not self.load_complete:
+            self.load_complete = True
+            self.delegate.webview_did_finish_load(self.webview, url)
+            activity.removeLoadingScreen()
 
 
 class AndroidWebView(object):
@@ -98,6 +99,7 @@ class AndroidWebView(object):
     @run_on_ui_thread
     def create_webview(self, *args):
         self.webview = PythonActivity.mWebView  # WebView(activity)
+        self.webview.setWebContentsDebuggingEnabled(True)
         settings = self.webview.getSettings()
         settings.setJavaScriptEnabled(True)
         settings.setAllowFileAccessFromFileURLs(True)
