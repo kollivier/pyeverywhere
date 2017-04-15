@@ -16,6 +16,10 @@ def get_app():
     return app
 
 
+def get_resource_url(url):
+    return "file://%s" % url
+
+
 class AppDelegate (AppKit.NSObject):
     def applicationDidFinishLaunching_(self, aNotification):
         pass
