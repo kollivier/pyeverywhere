@@ -47,11 +47,17 @@ then
 BUILD_TYPE="--release"
 fi
 
+INTENT_FILTERS=
 if [ ! -z "${11}" ]
 then
-echo "Keystore is ${11}"
-echo "keyalias is ${12}"
-KEYINFO="--keystore ${11} --signkey ${12} --keystorepw ${13}"
+INTENT_FILTERS="--intent-filters ${11}"
+fi
+
+if [ ! -z "${12}" ]
+then
+echo "Keystore is ${12}"
+echo "keyalias is ${13}"
+KEYINFO="--keystore ${12} --signkey ${13} --keystorepw ${14}"
 fi
 
 DIST_DIR="$HOME/.local/share/python-for-android/dists"
@@ -59,7 +65,9 @@ if [ "$(uname)" == "Darwin" ]; then
     DIST_DIR="$HOME/.python-for-android/dists"
 fi
 
-p4a apk --private=$4 --assets-dir=$4/files $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
+echo "Packaging files"
+
+p4a apk --private=$4 --assets-dir=$4/files $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]

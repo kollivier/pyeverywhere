@@ -330,6 +330,7 @@ def build(args):
         whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
         launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
         orientation = get_value_for_platform("orientation", "android", "sensor")
+        intent_filters = os.path.abspath(get_value_for_platform("intent_filters", "android", "fakefile"))
 
         keystore = ""
         keyalias = ""
@@ -369,7 +370,7 @@ def build(args):
 
         shutil.rmtree(venv_dir)
 
-        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, keystore, keyalias, keypasswd]
+        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, intent_filters, keystore, keyalias, keypasswd]
         returncode = run_command(cmd)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
