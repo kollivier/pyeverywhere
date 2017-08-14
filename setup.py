@@ -13,9 +13,13 @@ setup(
     author='Kevin Ollivier',
     author_email='kevin@kosoftworks.com',
     license='APL',
-    scripts=['pew'],
     package_dir={'': 'src'},
     packages=['pew', 'pewtools'],
-    setup_requires=['requests']
+    setup_requires=['requests'],
     # test_suite = 'your.module.tests',
+    entry_points={
+        'console_scripts': [
+            'pew = pew.tool:main'
+        ]
+    }
 )
