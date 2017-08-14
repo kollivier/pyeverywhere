@@ -26,7 +26,7 @@ try:
 except NameError:
     pass
 
-thisdir = os.path.dirname(os.path.abspath(__file__))
+thisdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 srcdir = os.path.join(thisdir, 'src')
 
 config_dir = os.path.expanduser(os.path.join("~", ".pyeverywhere"))
@@ -393,14 +393,18 @@ def build(args):
         run_command(["open", project_file.replace(" ", "\\ ")])
 
     elif args.platform in ["mac", "win"]:
-        import py2app
+        if args.platform == 'mac':
+            import py2app
+
+            sys.argv = [sys.argv[0], "py2app"]
+        else:
+            import py2exe
+            sys.argv = [sys.argv[0], "py2exe"]
+
+        packages = []
         plist = {
             'CFBundleIdentifier': info_json["identifier"],
         }
-
-        sys.argv = [sys.argv[0], "py2app"]
-
-        packages = []
 
         if "packages" in info_json:
             packages.extend(info_json["packages"])
@@ -415,6 +419,15 @@ def build(args):
             "site_packages": True,
         }
 
+        dll_excludes = ["combase.dll", "crypt32.dll", "dhcpcsvc.dll", "msvcp90.dll", "mpr.dll", "oleacc.dll", "powrprof.dll", "psapi.dll", "setupapi.dll", "userenv.dll",  "usp10.dll", "wtsapi32.dll"]
+
+        py2exe_opts = {
+            "dll_excludes": dll_excludes
+        }
+
+        # this is needed on Windows for py2exe to find scripts in the src directory
+        sys.path.append(src_dir)
+
         data_files = [('.', [os.path.join(cwd, "project_info.json")])]
         for root, dirs, files in os.walk("src/files"):
             files_in_dir = []
@@ -425,14 +438,20 @@ def build(args):
                 data_files.append((root.replace("src/", ""), files_in_dir))
 
         print "data_files = %r" % data_files
-        setup(name=info_json["name"],
+        name = info_json["name"]
+        # workaround a bug in py2exe where it expects strings instead of Unicode
+        if args.platform == 'win':
+            name = name.encode('utf-8')
+        setup(name=name,
               version=info_json["version"],
               options={
                   'py2app': py2app_opts,
+                  'py2exe': py2exe_opts
               },
               app=['src/main.py'],
+              windows=['src/main.py'],
               data_files=data_files
-              )
+        )
 
         if sys.platform.startswith("darwin") and "codesign" in info_json:
             base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
@@ -474,19 +493,6 @@ def update(args):
     pewtools.get_dependencies_for_platform(args.platform)
     global command_env, verbose
     pewtools.initialize_platform(args.platform, command_env, verbose=verbose)
-
-    temp_pew = os.path.join(tempdir, 'pew')
-    dest_dir = os.path.join(cwd, 'src', 'pew')
-    if os.path.exists(dest_dir) and args.platform == "pew":
-        if input("This will overwrite the existing pew module. Continue? [Y/n]").lower() == "y":
-            shutil.move(dest_dir, temp_pew)
-
-    try:
-        if not os.path.exists(dest_dir):
-            shutil.copytree(os.path.join(srcdir, 'pew'), dest_dir)
-    except Exception, e:
-        if os.path.exists(temp_pew):
-            shutil.move(temp_pew, dest_dir)
 
     if os.path.exists(tempdir):
         try:

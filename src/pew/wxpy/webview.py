@@ -31,9 +31,9 @@ class NativeWebView(object):
             self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
             self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
         else:
-            self.webview = wx.html2.WebView(self.view, -1)
-            self.webview.Bind(wx.html2.EVT_NAVIGATING, self.OnBeforeLoad)
-            self.webview.Bind(wx.html2.EVT_LOADED, self.OnLoadComplete)
+            self.webview = wx.html2.WebView.New(self.view)
+            self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
+            self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
 
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
