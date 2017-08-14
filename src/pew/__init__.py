@@ -63,10 +63,12 @@ try:
         else:
             platform = sys.platform
 except Exception, e:
-    pass
+    import traceback
+    logging.warning("Failure when loading wxPython")
+    logging.warning(traceback.format_exc(e))
 
 if platform is None:
-    logging.warning("PyEverywhere does not currently support this platform.")
+    logging.warning("PyEverywhere could not load a browser for this platform.")
 
 app_name = "python"
 
