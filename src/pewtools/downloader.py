@@ -52,7 +52,7 @@ def download_file(url, output_file, max_tries=5):
                     else:
                         sys.stdout.write("\rDownloaded %d of %s bytes" % (bytes, str(total_size)))
             current_try = 6
-        except Exception, e:
+        except Exception as e:
             import traceback
             traceback.print_exc()
             current_try += 1

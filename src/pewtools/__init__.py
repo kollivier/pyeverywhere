@@ -6,7 +6,7 @@ import subprocess
 import sys
 import zipfile
 
-import downloader
+from . import downloader
 from virtualenvapi.manage import VirtualEnvironment
 
 __version__ = "0.9.1"

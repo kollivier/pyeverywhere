@@ -9,7 +9,7 @@ useWebKitCtrl = False
 try:
     import wx.webkit
     useWebKitCtrl = True
-except Exception, e:
+except Exception as e:
     if sys.platform.startswith('darwin'):
         logging.warning("Unable to load WebKitCtrl wrapper")
 

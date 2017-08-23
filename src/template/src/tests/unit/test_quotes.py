@@ -7,7 +7,7 @@ class QuoteTests(unittest.TestCase):
         last_quote = None
         quotes = mp.get_all_quotes()
         
-        for i in xrange(5):
+        for i in range(5):
             quote = mp.get_random_quote()
             self.assertIn(quote, quotes)
             if last_quote is not None:

@@ -22,9 +22,9 @@ class NativePEWApp(wx.App):
         self.MainLoop()
 
 try:
-    from webview_chromium import *
-except Exception, e:
+    from .webview_chromium import *
+except Exception as e:
     import traceback
-    logging.warning(traceback.format_exc(e))
+    logging.warning(traceback.format_tb(e))
     logging.warn("Chromium not found, loading wxWebView instead.")
-    from webview import *
+    from .webview import *

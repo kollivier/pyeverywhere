@@ -8,7 +8,7 @@ class SampleProjectFunctionalTests(pew.test.PEWTestCase):
         self.assertIsNotNone(self.webview)
         
     def testQuoteButton(self):
-        initial_text = u"Welcome to Hello World the App! Click the button to see some Python magic!"
+        initial_text = "Welcome to Hello World the App! Click the button to see some Python magic!"
         spam_text = self.webview.get_js_value('$("#spam").text()')
         self.assertEqual(spam_text, initial_text)
         

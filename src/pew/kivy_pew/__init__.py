@@ -42,4 +42,4 @@ class NativePEWApp(App):
         pass
 
 
-from webview import *
+from .webview import *

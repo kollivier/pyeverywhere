@@ -14,22 +14,22 @@ import copy
 import json
 import logging
 import os
-import SimpleHTTPServer
-import SocketServer
+import six.moves.BaseHTTPServer as BaseHTTPServer
+import six.moves.socketserver as socketserver
 import sys
 import threading
 import time
-import urllib2
-import urlparse
+import urllib
 
-from BaseHTTPServer import BaseHTTPRequestHandler
+import six
+from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
 
 platform = None
 
 try:
     import console
     import ui
-    from pythonista import *
+    from .pythonista import *
     platform = 'ios'
 except:
     pass
@@ -37,24 +37,24 @@ except:
 try:
     import kivy
     import jnius
-    from kivy_pew import *
+    from .kivy_pew import *
     platform = 'android'
 except Exception as e:
     import traceback
     logging.warning("Failure when loading kivy")
-    logging.warning(traceback.format_exc(e))
+    logging.warning(traceback.format_exc())
 
 try:
-    from pyobjc_pew import *
+    from .pyobjc_pew import *
     platform = 'mac'
 except Exception as e:
     import traceback
     logging.warning("Couldn't import pyobjc WebView")
-    logging.warning("Reason: %s" % traceback.format_exc(e))
+    logging.warning("Reason: %s" % traceback.format_exc())
 
 try:
     if platform is None:
-        from wxpy import *
+        from .wxpy import *
         # Match the platform names used for pew commands for consistency
         if sys.platform == "darwin":
             platform = "mac"
@@ -65,7 +65,7 @@ try:
 except Exception as e:
     import traceback
     logging.warning("Failure when loading wxPython")
-    logging.warning(traceback.format_exc(e))
+    logging.warning(traceback.format_exc())
 
 if platform is None:
     logging.warning("PyEverywhere could not load a browser for this platform.")
@@ -118,7 +118,7 @@ def start_message_server_thread(delegate, host=HOST, port=MSG_PORT):
     except Exception as e:
         import traceback
         logging.info("Server disconnected")
-        logging.info("Reason: %s" % traceback.format_exc(e))
+        logging.info("Reason: %s" % traceback.format_exc())
     logging.info("Finished.")
 
 
@@ -133,9 +133,9 @@ def start_local_server(url_root, host=HOST, port=PORT, callback=None):
     useful for taking an action like opening the site in a web browser once it is loaded.
     """ % (HOST, PORT)
 
-    http_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+    http_handler = BaseHTTPServer.SimpleHTTPRequestHandler
 
-    httpd = SocketServer.TCPServer((HOST, PORT), http_handler)
+    httpd = socketserver.TCPServer((HOST, PORT), http_handler)
     try:
         root = os.path.abspath(url_root)
         os.chdir(root)
@@ -214,7 +214,10 @@ class PEWMessageHandler:
         """
         logging.debug("parsing url: %r" % (url,))
 
-        parts = urlparse.urlparse(url)
+        try:
+            parts = urllib.parse.urlparse(url)
+        except ImportError:
+            parts = urllib.parse(url)
 
         query = parts.query
 
@@ -227,14 +230,17 @@ class PEWMessageHandler:
         func_name = parts.netloc
         if path != "":
             func_name += path.replace("/", ".")
-        command = u"%s" % func_name
+        command = "%s" % func_name
 
         func_args = []
         func_kwargs = {}
         if query:
             args = query.split("&")
             for arg in args:
-                arg = urllib2.unquote(arg.encode('ascii'))
+                try:
+                    arg = urllib.parse.unquote(arg.encode('ascii'))
+                except ImportError:
+                    arg = urllib.unquote(arg.encode('ascii'))
                 logging.debug("arg = %s" % arg)
                 #arg = arg.replace("\\", "\\\\")
                 #arg = arg.replace("\\u", "\u")
@@ -265,7 +271,7 @@ class PEWMessageHandler:
             function(*func_args, **func_kwargs)
         except Exception as e:
             import traceback
-            logging.error(traceback.format_exc(e))
+            logging.error(traceback.format_exc())
             return False
 
         self.message_received = True
@@ -391,7 +397,7 @@ class WebUIView(NativeWebView):
         """
         args = []
         for arg in a:
-            if isinstance(arg, basestring):
+            if isinstance(arg, six.string_types):
                 arg = "'%s'" % arg.replace("'", "\\'").encode("utf-8")
             else:
                 arg = "%s" % str(arg)

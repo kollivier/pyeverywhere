@@ -173,11 +173,11 @@ def create_android_setup_sh(info_json):
         os.makedirs(android_native_dir)
 
     android_setup_file = os.path.join(android_native_dir, "setup.sh")
-    f = open(android_setup_file, "wb")
+    f = open(android_setup_file, "w")
     f.write("""
-export ANDROIDAPI=%s
-export ANDROIDBUILDTOOLSVER=%s
-""" % (android_sdk, android_build_tools))
+export ANDROIDAPI={}
+export ANDROIDBUILDTOOLSVER={}
+""".format(android_sdk, android_build_tools))
     f.close()
 
 
@@ -457,7 +457,7 @@ def build(args):
         except:  # TODO: Print the error information if verbose is set.
             pass  # if cefpython is not found, we fall back to the stock OS browser
 
-        print "data_files = %r" % data_files
+        print("data_files = %r" % data_files)
         name = info_json["name"]
         # workaround a bug in py2exe where it expects strings instead of Unicode
         if args.platform == 'win':
@@ -479,7 +479,7 @@ def build(args):
 
         if sys.platform.startswith("darwin") and "codesign" in info_json:
             base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
-            print "base_path = %r" % base_path
+            print("base_path = %r" % base_path)
             # remove the .py files and the .pyo files as we shouldn't use them
             # running a .py file in the bundle can modify it.
             for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources", "lib", "python2.7")):
@@ -582,7 +582,7 @@ def main():
 
     if not args.func in [create, get, set]:
         if not os.path.exists(info_file):
-            print "Unable to find project info file at %s. pew cannot continue." % info_file
+            print("Unable to find project info file at %s. pew cannot continue." % info_file)
             sys.exit(1)
 
         global info_json
