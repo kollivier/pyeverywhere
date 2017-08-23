@@ -4,7 +4,7 @@ and an HTML/CSS/JS-based front end.
 """
 
 
-__version__ = "0.9.1"
+__version__ = "0.9.2"
 
 HOST = "127.0.0.1"
 PORT = 8000
