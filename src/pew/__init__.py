@@ -39,7 +39,7 @@ try:
     import jnius
     from kivy_pew import *
     platform = 'android'
-except Exception, e:
+except Exception as e:
     import traceback
     logging.warning("Failure when loading kivy")
     logging.warning(traceback.format_exc(e))
@@ -47,7 +47,7 @@ except Exception, e:
 try:
     from pyobjc_pew import *
     platform = 'mac'
-except Exception, e:
+except Exception as e:
     import traceback
     logging.warning("Couldn't import pyobjc WebView")
     logging.warning("Reason: %s" % traceback.format_exc(e))
@@ -62,7 +62,7 @@ try:
             platform = "win"
         else:
             platform = sys.platform
-except Exception, e:
+except Exception as e:
     import traceback
     logging.warning("Failure when loading wxPython")
     logging.warning(traceback.format_exc(e))
@@ -115,7 +115,7 @@ def start_message_server_thread(delegate, host=HOST, port=MSG_PORT):
     logging.info("message server initialized at http://%s:%s/" % (host, port))
     try:
         server.serve_forever()
-    except Exception, e:
+    except Exception as e:
         import traceback
         logging.info("Server disconnected")
         logging.info("Reason: %s" % traceback.format_exc(e))
@@ -263,7 +263,7 @@ class PEWMessageHandler:
         try:
             function = eval(command)
             function(*func_args, **func_kwargs)
-        except Exception, e:
+        except Exception as e:
             import traceback
             logging.error(traceback.format_exc(e))
             return False
@@ -411,7 +411,7 @@ class WebUIView(NativeWebView):
             self.delegate.shutdown()
 
     def webview_should_start_load(self, webview, url, nav_type):
-        if self.protocol is not None and self.delegate is not None:
+        if self.protocol is not None and self.delegate is not None and url.startswith(self.protocol):
             return not self.delegate.parse_message(url)
 
         return True

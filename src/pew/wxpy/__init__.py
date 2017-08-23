@@ -1,3 +1,4 @@
+import logging
 import wx
 
 def run_on_main_thread(func, *args, **kwargs):
@@ -20,4 +21,10 @@ class NativePEWApp(wx.App):
     def run(self):
         self.MainLoop()
 
-from webview import *
+try:
+    from webview_chromium import *
+except Exception, e:
+    import traceback
+    logging.warning(traceback.format_exc(e))
+    logging.warn("Chromium not found, loading wxWebView instead.")
+    from webview import *

@@ -419,11 +419,10 @@ def build(args):
             "site_packages": True,
         }
 
-        dll_excludes = ["combase.dll", "crypt32.dll", "dhcpcsvc.dll", "msvcp90.dll", "mpr.dll", "oleacc.dll", "powrprof.dll", "psapi.dll", "setupapi.dll", "userenv.dll",  "usp10.dll", "wtsapi32.dll"]
+        dll_excludes = ["combase.dll", "credui.dll", "crypt32.dll", "dhcpcsvc.dll", "msvcp90.dll", "mpr.dll", "oleacc.dll", "powrprof.dll", "psapi.dll", "setupapi.dll", "userenv.dll",  "usp10.dll", "wtsapi32.dll"]
+        dll_excludes.extend(["iertutil.dll", "iphlpapi.dll", "nsi.dll", "psapi.dll", "oleacc.dll", "urlmon.dll", "Secur32.dll", "setupapi.dll", "userenv.dll", "webio.dll","wininet.dll", "winhttp.dll", "winnsi.dll", "wtsapi.dll"])
 
-        py2exe_opts = {
-            "dll_excludes": dll_excludes
-        }
+        dll_excludes.extend(["cryptui.dll", "d3d9.dll", "d3d11.dll", "dbghelp.dll", "dwmapi.dll", "dwrite.dll", "dxgi.dll", "dxva2.dll", "fontsub.dll", "ncrypt.dll", "wintrust.dll"])
 
         # this is needed on Windows for py2exe to find scripts in the src directory
         sys.path.append(src_dir)
@@ -437,11 +436,36 @@ def build(args):
             if len(files_in_dir) > 0:
                 data_files.append((root.replace("src/", ""), files_in_dir))
 
+        try:
+            import cefpython3
+            cefp = os.path.dirname(cefpython3.__file__)
+            cef_files = ['%s/icudtl.dat' % cefp]
+            cef_files.extend(glob.glob('%s/*.exe' % cefp))
+            cef_files.extend(glob.glob('%s/*.dll' % cefp))
+            cef_files.extend(glob.glob('%s/*.pak' % cefp))
+            cef_files.extend(glob.glob('%s/*.bin' % cefp))
+            data_files.extend([('', cef_files),
+                ('locales', ['%s/locales/en-US.pak' % cefp]),
+                ]
+            )
+            for cef_pyd in glob.glob(os.path.join(cefp, 'cefpython_py*.pyd')):
+                version_str = "{}{}.pyd".format(sys.version_info[0], sys.version_info[1])
+                if not cef_pyd.endswith(version_str):
+                    print("Excluding pyd: {}".format(cef_pyd))
+                    dll_excludes.append(cef_pyd)
+
+        except:  # TODO: Print the error information if verbose is set.
+            pass  # if cefpython is not found, we fall back to the stock OS browser
+
         print "data_files = %r" % data_files
         name = info_json["name"]
         # workaround a bug in py2exe where it expects strings instead of Unicode
         if args.platform == 'win':
             name = name.encode('utf-8')
+        py2exe_opts = {
+            "dll_excludes": dll_excludes
+        }
+
         setup(name=name,
               version=info_json["version"],
               options={
@@ -497,7 +521,7 @@ def update(args):
     if os.path.exists(tempdir):
         try:
             shutil.rmtree(tempdir)
-        except Exception, e:
+        except Exception as e:
             import traceback
             logging.error(traceback.format_exc(e))
 

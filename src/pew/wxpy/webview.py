@@ -46,9 +46,11 @@ class NativeWebView(object):
         menu.Append(editMenu, "Edit")
         return menu
 
-
     def show(self):
         self.view.Show()
+
+    def set_fullscreen(self, enable=True):
+        self.view.ShowFullScreen(enable)
 
     def load_url(self, url):
         self.webview.LoadURL(url)
