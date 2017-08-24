@@ -128,7 +128,6 @@ class NativeWebView(object):
             self.webview.ParentWindowWillClose()
             self.webview = None
 
-        self.shutdown()
         event.Skip()
 
     def HandleURL(self, url):
