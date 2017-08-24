@@ -401,6 +401,7 @@ def build(args):
             import py2exe
             sys.argv = [sys.argv[0], "py2exe"]
 
+        excludes = []
         packages = []
         plist = {
             'CFBundleIdentifier': info_json["identifier"],
@@ -412,12 +413,6 @@ def build(args):
         dist_dir = "dist/%s" % args.platform
         if not os.path.exists(dist_dir):
             os.makedirs(dist_dir)
-        py2app_opts = {
-            "dist_dir": dist_dir, 
-            'plist': plist,
-            "packages": packages,
-            "site_packages": True,
-        }
 
         dll_excludes = ["combase.dll", "credui.dll", "crypt32.dll", "dhcpcsvc.dll", "msvcp90.dll", "mpr.dll", "oleacc.dll", "powrprof.dll", "psapi.dll", "setupapi.dll", "userenv.dll",  "usp10.dll", "wtsapi32.dll"]
         dll_excludes.extend(["iertutil.dll", "iphlpapi.dll", "nsi.dll", "psapi.dll", "oleacc.dll", "urlmon.dll", "Secur32.dll", "setupapi.dll", "userenv.dll", "webio.dll","wininet.dll", "winhttp.dll", "winnsi.dll", "wtsapi.dll"])
@@ -451,8 +446,10 @@ def build(args):
             for cef_pyd in glob.glob(os.path.join(cefp, 'cefpython_py*.pyd')):
                 version_str = "{}{}.pyd".format(sys.version_info[0], sys.version_info[1])
                 if not cef_pyd.endswith(version_str):
-                    print("Excluding pyd: {}".format(cef_pyd))
-                    dll_excludes.append(cef_pyd)
+                    module_name = 'cefpython3.' + os.path.basename(cef_pyd).replace('.pyd', '')
+
+                    print("Excluding pyd: {}".format(module_name))
+                    excludes.append(module_name)
 
         except:  # TODO: Print the error information if verbose is set.
             pass  # if cefpython is not found, we fall back to the stock OS browser
@@ -463,7 +460,15 @@ def build(args):
         if args.platform == 'win':
             name = name.encode('utf-8')
         py2exe_opts = {
-            "dll_excludes": dll_excludes
+            "dll_excludes": dll_excludes,
+            "packages": packages,
+            "excludes": excludes,
+        }
+        py2app_opts = {
+            "dist_dir": dist_dir, 
+            'plist': plist,
+            "packages": packages,
+            "site_packages": True,
         }
 
         setup(name=name,
