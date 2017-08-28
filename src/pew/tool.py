@@ -74,6 +74,10 @@ platforms = [
     "win"
 ]
 
+templates = [
+    "default",
+]
+
 
 from StringIO import StringIO
 import struct
@@ -243,7 +247,7 @@ def create(args):
             print("Project already exists! Please delete or rename the existing project folder and try again.")
             sys.exit(1)
 
-        shutil.copytree(os.path.join(thisdir, "src", "template"), dir_name)
+        shutil.copytree(os.path.join(thisdir, "src", "templates", args.template), dir_name)
 
         project_json_file = os.path.join(dir_name, "project_info.json")
         project_json = json.load(open(project_json_file))
@@ -648,6 +652,8 @@ def main():
 
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
     new_opt.add_argument('name', help='Name of project to create')
+    new_opt.add_argument('--template', default='default', help='Specify a project template for the app. Choices are: %r' % (templates,))
+
     new_opt.set_defaults(func=create)
 
     up_opt = commands.add_parser('init', help="Initialize the PyEverywhere dependencies for the project in the current working directory.")
