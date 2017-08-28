@@ -17,7 +17,7 @@ try:
     import figleaf
     import figleaf.annotate_html as html_report
     has_figleaf = True
-except Exception, e:
+except Exception as e:
     import traceback
     logging.warning(traceback.format_exc(e))
 

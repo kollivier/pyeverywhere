@@ -33,7 +33,7 @@ class PEWThread(threading.Thread):
     def run(self):
         try:
             super(PEWThread, self).run()
-        except Exception, e:
+        except Exception as e:
             import traceback
             if hasattr(self, "target"):
                 logging.error("Error occurred in %r thread. Error details:" % self.target)

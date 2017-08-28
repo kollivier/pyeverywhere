@@ -39,4 +39,4 @@ class NativePEWApp(object):
     def shutdown(self):
         pass  # closing the app programmatically isn't supported in Pythonista
 
-from webview import *
+from .webview import *

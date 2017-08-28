@@ -1,7 +1,7 @@
 import os
 import sys
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 sys.path.insert(0, os.path.abspath('src'))
 import pew
@@ -13,9 +13,13 @@ setup(
     author='Kevin Ollivier',
     author_email='kevin@kosoftworks.com',
     license='APL',
-    scripts=['pew'],
     package_dir={'': 'src'},
-    packages=['pew', 'pewtools'],
-    setup_requires=['requests']
+    packages=find_packages('src'),
+    setup_requires=['requests'],
     # test_suite = 'your.module.tests',
+    entry_points={
+        'console_scripts': [
+            'pew = pew.tool:main'
+        ]
+    }
 )

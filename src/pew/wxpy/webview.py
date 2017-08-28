@@ -1,9 +1,19 @@
-import wx
-import wx.webkit
-
 import logging
 import sys
 import threading
+
+import wx
+import wx.html2
+
+useWebKitCtrl = False
+try:
+    import wx.webkit
+    useWebKitCtrl = True
+except Exception as e:
+    if sys.platform.startswith('darwin'):
+        logging.warning("Unable to load WebKitCtrl wrapper")
+
+
 
 logging.info("Initializing WebView?")
 
@@ -13,11 +23,17 @@ PEWThread = threading.Thread
 class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.view = wx.Frame(None, -1, name, size=size)
-        if sys.platform.startswith("darwin"):
-            self.view.SetMenuBar(self.createMenu())
-        self.webview = wx.webkit.WebKitCtrl(self.view, -1)
-        self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
-        self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
+
+        if useWebKitCtrl:
+            if sys.platform.startswith("darwin"):
+                self.view.SetMenuBar(self.createMenu())
+            self.webview = wx.webkit.WebKitCtrl(self.view, -1)
+            self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
+            self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
+        else:
+            self.webview = wx.html2.WebView.New(self.view)
+            self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
+            self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
 
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -30,9 +46,11 @@ class NativeWebView(object):
         menu.Append(editMenu, "Edit")
         return menu
 
-
     def show(self):
         self.view.Show()
+
+    def set_fullscreen(self, enable=True):
+        self.view.ShowFullScreen(enable)
 
     def load_url(self, url):
         self.webview.LoadURL(url)
@@ -55,6 +73,9 @@ class NativeWebView(object):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
         return self.webview_should_start_load(self, event.URL, None)
 
+    def OnLoadComplete(self, event):
+        return self.webview_did_finish_load(self)
+
     def OnLoadStateChanged(self, event):
         if event.GetState() == wx.webkit.WEBKIT_STATE_STOP:
-            return self.webview_did_finish_load(self)
+            return self.OnLoadComplete(event)

@@ -3,7 +3,7 @@ logging.basicConfig(level=logging.DEBUG)
 import os
 import sys
 
-thisdir = os.path.dirname(os.path.abspath(__file__))
+thisdir = os.path.dirname(sys.argv[0]) 
 
 import pew
 

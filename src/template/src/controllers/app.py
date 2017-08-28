@@ -31,7 +31,10 @@ class Application(pew.PEWApp):
         sys.excepthook = self.unhandled_exception
 
         index = os.path.abspath(os.path.join(thisdir, "files", "web", "index.html"))
-        url = "file://%s" % urllib.quote(index)
+        try:
+            url = "file://%s" % urllib.parse.quote(index)
+        except ImportError:
+            url = "file://%s" % urllib.quote(index)
         logging.debug("url: %r" % url)
         if not os.path.exists(index):
             raise Exception("Unable to load UI file")
