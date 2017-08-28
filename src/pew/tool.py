@@ -107,6 +107,20 @@ def run_command(cmd):
     return subprocess.call(cmd, env=command_env)
 
 
+def run_python_script(script, args):
+        py_exe = 'python'
+
+        # On OS X, when running in a virtualenv we need to run scripts from within
+        # the framework's Python.app bundle to run GUI apps.
+        # Set PYTHONHOME to the virtualenv root to ensure we get virtualenv environment
+        if sys.platform.startswith('darwin') and hasattr(sys, 'real_prefix'):
+            command_env['PYTHONHOME'] = sys.prefix
+            py_exe = '{}/bin/python'.format(sys.real_prefix)
+        result = run_command([py_exe, script, " ".join(args)])
+        del command_env['PYTHONHOME']
+        return result
+
+
 def codesign_mac(path, identity):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
 
@@ -259,10 +273,10 @@ def create(args):
 
 
 def test(args):
-    cmd = "python src/main.py --test"
+    cmd_args = ["--test"]
     if args.no_functional:
-        cmd += " --no-functional"
-    sys.exit(run_command(cmd))
+        cmd_args.append("--no-functional")
+    sys.exit(run_python_script("src/main.py", cmd_args))
 
 
 def run(args):
@@ -288,7 +302,7 @@ def run(args):
             webbrowser.open(url)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:
-        run_command(["python", "src/main.py", " ".join(args.args)])
+        run_python_script('src/main.py', args.args)
 
 
 def copy_config_file(args):
