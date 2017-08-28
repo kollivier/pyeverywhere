@@ -108,17 +108,17 @@ def run_command(cmd):
 
 
 def run_python_script(script, args):
-        py_exe = 'python'
+    py_exe = 'python'
 
-        # On OS X, when running in a virtualenv we need to run scripts from within
-        # the framework's Python.app bundle to run GUI apps.
-        # Set PYTHONHOME to the virtualenv root to ensure we get virtualenv environment
-        if sys.platform.startswith('darwin') and hasattr(sys, 'real_prefix'):
-            command_env['PYTHONHOME'] = sys.prefix
-            py_exe = '{}/bin/python'.format(sys.real_prefix)
-        result = run_command([py_exe, script, " ".join(args)])
-        del command_env['PYTHONHOME']
-        return result
+    # On OS X, when running in a virtualenv we need to run scripts from within
+    # the framework's Python.app bundle to run GUI apps.
+    # Set PYTHONHOME to the virtualenv root to ensure we get virtualenv environment
+    if sys.platform.startswith('darwin') and hasattr(sys, 'real_prefix'):
+        command_env['PYTHONHOME'] = sys.prefix
+        py_exe = '{}/bin/python'.format(sys.real_prefix)
+    result = run_command([py_exe, script, " ".join(args)])
+    del command_env['PYTHONHOME']
+    return result
 
 
 def codesign_mac(path, identity):
