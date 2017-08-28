@@ -255,7 +255,7 @@ def create(args):
 
 
 def test(args):
-    cmd = sys.executable + " src/main.py --test"
+    cmd = "python src/main.py --test"
     if args.no_functional:
         cmd += " --no-functional"
     sys.exit(run_command(cmd))
@@ -284,7 +284,7 @@ def run(args):
             webbrowser.open(url)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:
-        run_command([sys.executable, "src/main.py", " ".join(args.args)])
+        run_command(["python", "src/main.py", " ".join(args.args)])
 
 
 def copy_config_file(args):
