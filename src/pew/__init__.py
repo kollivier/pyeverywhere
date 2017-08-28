@@ -7,7 +7,7 @@ and an HTML/CSS/JS-based front end.
 __version__ = "0.9.2"
 
 HOST = "127.0.0.1"
-PORT = 8000
+PORT = 8456
 MSG_PORT = 8128
 
 import copy

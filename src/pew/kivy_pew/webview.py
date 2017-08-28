@@ -16,6 +16,20 @@ PythonActivity = autoclass('org.kivy.android.PythonActivity')
 activity = PythonActivity.mActivity
 
 
+@run_on_ui_thread
+def set_fullscreen():
+    Context = PythonActivity.mActivity
+    view_instance = Context.getWindow().getDecorView()
+    View = autoclass('android.view.View')
+    flag = View.SYSTEM_UI_FLAG_LAYOUT_STABLE \
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION \
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN \
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION \
+                | View.SYSTEM_UI_FLAG_FULLSCREEN \
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+    view_instance.setSystemUiVisibility(flag)
+
+
 def show_alert(title, message=""):
     logging.info("Alert: %s %s" % (title, message))
 

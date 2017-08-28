@@ -16,6 +16,10 @@ def get_app():
     return app
 
 
+def set_fullscreen():
+    pass
+
+
 def get_resource_url(url):
     return "file://%s" % url
 
