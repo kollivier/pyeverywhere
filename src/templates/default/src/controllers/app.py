@@ -23,6 +23,7 @@ if json_dir.endswith("src"):
 
 info_json = json.loads(open(os.path.join(json_dir, "project_info.json"), "rb").read())
 
+
 class Application(pew.PEWApp):
     def setUp(self):
         """

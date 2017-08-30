@@ -348,7 +348,9 @@ def build(args):
         whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
         launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
         orientation = get_value_for_platform("orientation", "android", "sensor")
-        intent_filters = os.path.abspath(get_value_for_platform("intent_filters", "android", "fakefile"))
+        intent_filters = get_value_for_platform("intent_filters", "android", '')
+        if len(intent_filters) > 0:
+            intent_filters = os.path.abspath(intent_filters)
 
         keystore = ""
         keyalias = ""
@@ -383,7 +385,8 @@ def build(args):
         venv_dir = os.path.join(build_dir, "venv")
         if not os.path.exists(venv_dir):
             os.makedirs(venv_dir)
-        pewtools.copy_deps_to_build(info_json["packages"], venv_dir, build_dir)
+        if "packages" in info_json:
+            pewtools.copy_deps_to_build(info_json["packages"], venv_dir, build_dir)
         copy_pew_module(build_dir)
 
         shutil.rmtree(venv_dir)
@@ -392,6 +395,9 @@ def build(args):
         returncode = run_command(cmd)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
+        if not os.path.exists(project_dir):
+            print("iOS support files not downloaded for this project. Run 'pew init ios' first.")
+            sys.exit(1)
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
         project_build_dir = os.path.join(build_dir, os.path.basename(project_dir))
