@@ -3,12 +3,11 @@ import sys
 
 from setuptools import find_packages, setup
 
-sys.path.insert(0, os.path.abspath('src'))
-import pew
+version = '0.9.3'
 
 setup(
     name='pyeverywhere',
-    version=pew.__version__,
+    version=version,
     description='Build and deploy cross-platform desktop and mobile apps using Python.',
     author='Kevin Ollivier',
     author_email='kevin@kosoftworks.com',
