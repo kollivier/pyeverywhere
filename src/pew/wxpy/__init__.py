@@ -25,6 +25,6 @@ try:
     from .webview_chromium import *
 except Exception as e:
     import traceback
-    logging.warning(traceback.format_tb(e))
+    logging.warning(traceback.format_exc())
     logging.warn("Chromium not found, loading wxWebView instead.")
     from .webview import *
