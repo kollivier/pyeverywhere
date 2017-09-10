@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import six.moves.BaseHTTPServer as BaseHTTPServer
+import six.moves.SimpleHTTPServer as SimpleHTTPServer
 import six.moves.socketserver as socketserver
 import sys
 import threading
@@ -137,7 +138,7 @@ def start_local_server(url_root, host=HOST, port=PORT, callback=None):
     useful for taking an action like opening the site in a web browser once it is loaded.
     """ % (HOST, PORT)
 
-    http_handler = BaseHTTPServer.SimpleHTTPRequestHandler
+    http_handler = SimpleHTTPServer.SimpleHTTPRequestHandler
 
     httpd = socketserver.TCPServer((HOST, PORT), http_handler)
     try:

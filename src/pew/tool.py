@@ -175,7 +175,7 @@ def copy_files(src_dir, build_dir, ignore_paths):
 
 
 def copy_pew_module(build_dir):
-    pew_src_dir = os.path.join(thisdir, "src", "pew")
+    pew_src_dir = thisdir
     pew_dest_dir = os.path.join(build_dir, "pew")
     # For now, we want to allow developers to use their own customized pew module
     # until we offer more advanced configuration options. If they don't though,
