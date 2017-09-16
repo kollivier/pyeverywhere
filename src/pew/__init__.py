@@ -435,6 +435,11 @@ class WebUIView(NativeWebView):
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True  # make sure we don't wait forever if the page fails to load
 
+def get_app_dir():
+    return os.path.dirname(sys.argv[0])
+
+def get_files_dir():
+    return os.path.join(get_app_dir(), 'files')
 
 def get_user_dir():
     """
