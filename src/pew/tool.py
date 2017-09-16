@@ -251,6 +251,8 @@ def run(args):
             ui_root = info_json["ui_root"]
 
         def open_browser(url):
+            print("URL: %s" % url)
+            print("If your browser does not open within a few seconds, copy and paste this URL to test.")
             webbrowser.open(url)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:

@@ -24,6 +24,7 @@ import urllib
 
 import six
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
+from six.moves.urllib.parse import urlparse, unquote
 
 platform = None
 
@@ -144,8 +145,6 @@ def start_local_server(url_root, host=HOST, port=PORT, callback=None):
         if HOST == "":
             hostname = "localhost"
         url = "http://%s:%d/" % (hostname, PORT)
-        print("URL: %s" % url)
-        print("If your browser does not open within a few seconds, copy and paste this URL to test.")
 
         if callback:
             timer = threading.Timer(2.0, callback, (url,))
@@ -215,11 +214,7 @@ class PEWMessageHandler:
         """
         logging.debug("parsing url: %r" % (url,))
 
-        try:
-            parts = urllib.parse.urlparse(url)
-        except ImportError:
-            parts = urllib.parse(url)
-
+        parts = urlparse(url)
         query = parts.query
 
         # On Android at least, Python puts the ?whatever part in path rather than query
@@ -238,16 +233,17 @@ class PEWMessageHandler:
         if query:
             args = query.split("&")
             for arg in args:
-                try:
-                    arg = urllib.parse.unquote(arg.encode('ascii'))
-                except ImportError:
-                    arg = urllib.unquote(arg.encode('ascii'))
+                arg = unquote(arg.encode('ascii'))
                 logging.debug("arg = %s" % arg)
                 #arg = arg.replace("\\", "\\\\")
                 #arg = arg.replace("\\u", "\u")
                 arg = arg.decode('utf-8')
                 name = None
                 value = arg
+
+                if arg.find("=") != -1:
+                    name, value = arg.split("=")
+
                 if value == "empty_string":
                     value = ""
 
