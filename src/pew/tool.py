@@ -298,8 +298,22 @@ def run(args):
         if "ui_root" in info_json:
             ui_root = info_json["ui_root"]
 
+        url_args = ''
+        if len(args.args) > 0:
+            for arg in args.args:
+                if len(arg) > 0:
+                    if len(url_args) == 0:
+                        url_args += '?'
+                    else:
+                        url_args += '&'
+
+                    if arg.startswith('--'):
+                        arg = arg.replace('--', '')
+
+                    url_args += arg
+
         def open_browser(url):
-            webbrowser.open(url)
+            webbrowser.open(url + url_args)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:
         run_python_script('src/main.py', args.args)
