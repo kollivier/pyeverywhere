@@ -313,7 +313,9 @@ def run(args):
                     url_args += arg
 
         def open_browser(url):
-            webbrowser.open(url + url_args)
+            print("URL: %s" % url)
+            print("If your browser does not open within a few seconds, copy and paste this URL to test.")
+            webbrowser.open(url)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:
         run_python_script('src/main.py', args.args)
@@ -600,10 +602,18 @@ def build(args):
         # workaround a bug in py2exe where it expects strings instead of Unicode
         if args.platform == 'win':
             name = name.encode('utf-8')
+
+        # Make sure py2exe bundles the modules that six references
+        # the Py3 version of py2exe natively supports this so this is a 2.x only fix
+        includes = []
+        if sys.version_info[0] == 2:
+            includes = ["urllib", "SimpleHTTPServer"]
+
         py2exe_opts = {
             "dll_excludes": dll_excludes,
             "packages": packages,
             "excludes": excludes,
+            "includes": includes
         }
         py2app_opts = {
             "dist_dir": dist_dir, 
