@@ -34,7 +34,7 @@ class Application(pew.PEWApp):
         index = os.path.abspath(os.path.join(thisdir, "files", "web", "index.html"))
         try:
             url = "file://%s" % urllib.parse.quote(index)
-        except ImportError:
+        except:
             url = "file://%s" % urllib.quote(index)
         logging.debug("url: %r" % url)
         if not os.path.exists(index):
