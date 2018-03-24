@@ -20,7 +20,6 @@ import six.moves.socketserver as socketserver
 import sys
 import threading
 import time
-import urllib
 
 import six
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
