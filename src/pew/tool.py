@@ -26,8 +26,8 @@ try:
 except NameError:
     pass
 
-thisdir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
-srcdir = os.path.join(thisdir, 'src')
+thisdir = os.path.dirname(os.path.abspath(__file__))
+rootdir = os.path.abspath(os.path.join(thisdir, "..", ".."))
 
 config_dir = os.path.expanduser(os.path.join("~", ".pyeverywhere"))
 if not os.path.exists(config_dir):
@@ -42,7 +42,7 @@ pew_config = {}
 if os.path.exists(config_file):
     pew_config = json.load(open(config_file))
 
-android_dir = os.path.join(thisdir, "native", "android")
+android_dir = os.path.join(rootdir, "native", "android")
 
 command_env = os.environ.copy()
 
@@ -79,7 +79,6 @@ templates = [
 ]
 
 
-from StringIO import StringIO
 import struct
 
 
@@ -175,7 +174,7 @@ def copy_files(src_dir, build_dir, ignore_paths):
 
 
 def copy_pew_module(build_dir):
-    pew_src_dir = thisdir
+    pew_src_dir = os.path.join(rootdir, "src", "pew")
     pew_dest_dir = os.path.join(build_dir, "pew")
     # For now, we want to allow developers to use their own customized pew module
     # until we offer more advanced configuration options. If they don't though,
@@ -261,7 +260,7 @@ def create(args):
             print("Project already exists! Please delete or rename the existing project folder and try again.")
             sys.exit(1)
 
-        shutil.copytree(os.path.join(thisdir, "src", "templates", args.template), dir_name)
+        shutil.copytree(os.path.join(rootdir, "src", "templates", args.template), dir_name)
 
         project_json_file = os.path.join(dir_name, "project_info.json")
         project_json = json.load(open(project_json_file))
@@ -294,7 +293,7 @@ def run(args):
         build(args)  # we can't run the app programmatically, so just use build to load the project.
     elif args.platform == "browser":
         import pew
-        ui_root = "src/files/www/index.html"
+        ui_root = "src/files/web/index.html"
         if "ui_root" in info_json:
             ui_root = info_json["ui_root"]
 
@@ -402,7 +401,10 @@ def build(args):
         if not os.path.exists(venv_dir):
             os.makedirs(venv_dir)
         if "packages" in info_json:
-            pewtools.copy_deps_to_build(info_json["packages"], venv_dir, build_dir)
+            python = None
+            if args.platform in ["ios", "android"]:
+                python = "python2.7"
+            pewtools.copy_deps_to_build(info_json["packages"], venv_dir, build_dir, python)
         copy_pew_module(build_dir)
 
         shutil.rmtree(venv_dir)
@@ -418,7 +420,8 @@ def build(args):
             shutil.rmtree(build_dir)
         project_build_dir = os.path.join(build_dir, os.path.basename(project_dir))
         shutil.copytree(project_dir, project_build_dir)
-        plist_file = os.path.join(project_build_dir, "PythonistaAppTemplate", "Info.plist")
+        project_xcode_dir = os.path.join(project_build_dir, "PythonistaAppTemplate")
+        plist_file = os.path.join(project_xcode_dir, "Info.plist")
         if os.path.exists(plist_file):
             version_short = info_json["version"].split(".")
             version_short = ".".join(version_short[:3])
@@ -426,6 +429,7 @@ def build(args):
             plist['CFBundleIdentifier'] = info_json["identifier"]
             plist['CFBundleName'] = plist['CFBundleDisplayName'] = info_json["name"]
             plist['CFBundleVersion'] = info_json["version"]
+            plist['CFBundleIconName'] = 'AppIcon'
             plist['CFBundleShortVersionString'] = version_short
             plist['UIStatusBarHidden'] = get_value_for_platform("hide_status_bar", "ios", True)
             
@@ -437,7 +441,49 @@ def build(args):
 
             icons = get_value_for_platform("icons", "ios", [])
             if len(icons) > 0:
-                plist['CFBundleIconFiles'] = icons
+                appicon_dir = os.path.join(project_xcode_dir, "Assets.xcassets", "AppIcon.appiconset")
+                contents_file = os.path.join(appicon_dir, "Contents.json")
+                contents = json.loads(open(contents_file).read())
+
+                for icon_data in contents["images"]:
+                    scale = 1
+                    if "scale" in icon_data:
+                        scale = int(icon_data["scale"].replace("x", ""))
+                    if "size" in icon_data:
+                        width, height = icon_data["size"].split("x")
+                        scaled_width = float(width) * scale
+                        # FIXME: switch to parsing the png header to get image dimensions
+                        # rather than expecting a certain filename convention. See here for info:
+                        # https://stackoverflow.com/questions/8032642/how-to-obtain-image-size-using-standard-python-class-without-using-external-lib
+                        best_icon = None
+                        for icon in icons:
+                            basename = os.path.splitext(icon)[0]
+                            last_dash = basename.rfind("-")
+                            size = basename[last_dash+1:]
+                            try:
+                                size = int(size)
+                            except:
+                                continue
+                            if size == scaled_width:
+                                best_icon = icon
+                                break
+                            elif size > scaled_width:
+                                if best_icon:
+                                    icon_size = os.path.splitext(best_icon)[0].split("-")[1]
+                                    if int(icon_size) < size:
+                                        continue
+                                best_icon = icon
+
+                        if best_icon:
+                            full_icon_path = os.path.join(cwd, "icons", "ios", best_icon)
+                            filename = None
+                            if "filename" in icon_data:
+                                dest_icon_path = os.path.join(appicon_dir, icon_data["filename"])
+                                shutil.copyfile(full_icon_path, dest_icon_path)
+                            else:
+                                print("No filename listed for {}".format(scaled_width))
+                        else:
+                            print("Could not find icon for size {}".format(scaled_width))
 
             orientation_value = get_value_for_platform("orientation", "ios", "both")
             orientations = [orientation_value]
@@ -522,12 +568,12 @@ def build(args):
         pewtools.copy_deps_to_build(requirements, build_dir, dest_dir)
 
         if os.path.exists(config_file):
-            f = open(config_file, 'rb')
+            f = open(config_file, 'r')
             config = f.read()
             f.close()
 
             config = config.replace("My App", info_json["name"])
-            f = open(config_file, 'wb')
+            f = open(config_file, 'w')
             f.write(config)
             f.close()
         else:
