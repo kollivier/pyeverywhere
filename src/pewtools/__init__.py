@@ -1,3 +1,4 @@
+import glob
 import hashlib
 import logging
 import os
@@ -122,12 +123,12 @@ def initialize_platform(platform_name, command_env, verbose=False):
             subprocess.check_call(final_cmd, env=command_env)
 
 
-def copy_deps_to_build(deps, build_dir, dest_dir):
+def copy_deps_to_build(deps, build_dir, dest_dir, python=None):
     venv_dir = os.path.join(build_dir, 'venv')
-    env = VirtualEnvironment(venv_dir)
+    env = VirtualEnvironment(venv_dir, python=python)
     env.open_or_create()
 
-    venv_site_packages = os.path.join(venv_dir, 'lib', 'python2.7', 'site-packages')
+    venv_site_packages = glob.glob(os.path.join(venv_dir, 'lib', 'python*', 'site-packages'))[0]
 
     ignore_paths = []
     for path in os.listdir(venv_site_packages):
