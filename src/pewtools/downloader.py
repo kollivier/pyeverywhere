@@ -25,7 +25,7 @@ def download_file(url, output_file, max_tries=5):
             raise Exception("Download failed for %s. Error code: %d" % (url, r.status_code))
 
         CHUNK_SIZE = 8192
-        total_size = "unknown"
+        total_size = None
 
         if 'Content-Length' in r.headers:
             total_size = int(r.headers['Content-Length'])
