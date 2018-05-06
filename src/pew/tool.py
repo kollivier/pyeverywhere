@@ -114,7 +114,10 @@ def run_python_script(script, args):
     # Set PYTHONHOME to the virtualenv root to ensure we get virtualenv environment
     if sys.platform.startswith('darwin') and hasattr(sys, 'real_prefix'):
         command_env['PYTHONHOME'] = sys.prefix
-        py_exe = '{}/bin/python'.format(sys.real_prefix)
+        # It appears that framework builds of Python no longer have a python
+        # executable in the bin directory, so we add the version to the filename.
+        version = sys.version[:3]
+        py_exe = '{}/bin/python{}'.format(sys.real_prefix, version)
     result = run_command([py_exe, script, " ".join(args)])
     del command_env['PYTHONHOME']
     return result
