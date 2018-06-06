@@ -540,7 +540,10 @@ def build(args):
         copy_files(src_dir, dest_dir, script_ignore_paths)
         copy_pew_module(dest_dir)
         files_dest_dir = os.path.join(project_build_dir, "files")
-        copy_files(files_src_dir, files_dest_dir, ignore_paths)
+
+        # FIXME: We shouldn't need any logic to copy hardcoded directories such as this one.
+        if os.path.exists(files_src_dir):
+            copy_files(files_src_dir, files_dest_dir, ignore_paths)
 
         project_file = os.path.join(project_build_dir, "PythonistaAppTemplate.xcodeproj")
         config_file = os.path.join(project_file, "project.pbxproj")
