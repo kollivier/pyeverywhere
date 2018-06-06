@@ -9,6 +9,8 @@ import wx
 from cefpython3 import cefpython
 WindowUtils = cefpython.WindowUtils()
 
+MAC = sys.platform.startswith('darwin')
+
 chrome_settings = {
     "debug": True,
     "log_severity": cefpython.LOGSEVERITY_INFO,
@@ -48,16 +50,33 @@ class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
         cefpython.Initialize(chrome_settings)
 
-        self.browser_panel = self.view = wx.Frame(None, -1, name, size=size)
-        
+        self.view = wx.Frame(None, -1, name, size=size)
+
+        self.browser_panel = wx.Panel(self.view, style=wx.WANTS_CHARS)
+        self.browser_panel.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
+        self.browser_panel.Bind(wx.EVT_SIZE, self.OnSize)
+
         # self.browser_panel = wx.Panel(self.view, style=wx.WANTS_CHARS)
         self.browser_panel.Bind(wx.EVT_SIZE, self.OnSize)
         self.browser_panel.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
 
+        if MAC:
+            try:
+                # noinspection PyUnresolvedReferences
+                from AppKit import NSApp
+                # Make the content view for the window have a layer.
+                # This will make all sub-views have layers. This is
+                # necessary to ensure correct layer ordering of all
+                # child views and their layers. This fixes Window
+                # glitchiness during initial loading on Mac (Issue #371).
+                NSApp.windows()[0].contentView().setWantsLayer_(True)
+            except ImportError:
+                logging.error("PyObjC needs to be installed to use Chromium on Mac.")
+
         window_info = cefpython.WindowInfo()
         (width, height) = self.browser_panel.GetClientSize().Get()
         window_info.SetAsChild(self.browser_panel.GetHandle(),
-                               [0, 0, size[0], size[1]])
+                               [0, 0, width, height])
         self.webview = cefpython.CreateBrowserSync(window_info,
                                              url="about:blank")
 
