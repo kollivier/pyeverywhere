@@ -600,6 +600,15 @@ def build(args):
         packages = []
         plist = {
             'CFBundleIdentifier': info_json["identifier"],
+            # Make sure the browser will load localhost URLs
+            'NSAppTransportSecurity': {
+                'NSAllowsArbitraryLoads': True,
+                'NSExceptionDomains': {
+                    'localhost': {
+                        'NSExceptionAllowsInsecureHTTPLoads': True
+                    }
+                }
+            }
         }
 
         if "packages" in info_json:
@@ -618,13 +627,22 @@ def build(args):
         sys.path.append(src_dir)
 
         data_files = [('.', [os.path.join(cwd, "project_info.json")])]
-        for root, dirs, files in os.walk("src/files"):
-            files_in_dir = []
-            for afile in files:
-                if not afile.startswith("."):
-                    files_in_dir.append(os.path.join(root, afile))
-            if len(files_in_dir) > 0:
-                data_files.append((root.replace("src/", ""), files_in_dir))
+        asset_dirs = []
+        if "asset_dirs" in info_json:
+            asset_dirs = info_json["asset_dirs"]
+        else:
+            message = "Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['src/files'] to your project_info.json file."
+            print(message)
+            sys.exit(1)
+
+        for asset_dir in asset_dirs:
+            for root, dirs, files in os.walk(asset_dir):
+                files_in_dir = []
+                for afile in files:
+                    if not afile.startswith("."):
+                        files_in_dir.append(os.path.join(root, afile))
+                if len(files_in_dir) > 0:
+                    data_files.append((root.replace("src/", ""), files_in_dir))
 
         try:
             import cefpython3
