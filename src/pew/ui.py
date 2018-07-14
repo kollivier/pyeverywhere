@@ -40,11 +40,7 @@ def check_platforms():
     try:
         import wx
         import cefpython3
-        name = 'chromium'
-        if options.prefer_chromium:
-            platforms.insert(0, name)
-        else:
-            platforms.append(name)
+        platforms.append('chromium')
     except Exception as e:
         import traceback
         errors['chromium'] = traceback.format_exc()
@@ -57,6 +53,14 @@ def check_platforms():
             logging.error(errors[platform])
 
         raise Exception(message)
+
+    # reorder the platforms list so that preferred platforms come first
+    if len(options.preferred_platforms) > 0:
+        preferred = options.preferred_platforms
+        preferred.reverse()
+        for platform in options.preferred_platforms:
+            if platform in platforms:
+                platforms.insert(0, platforms.pop(platforms.index(platform)))
 
     return platforms
 

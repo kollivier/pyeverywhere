@@ -1,1 +1,1 @@
-prefer_chromium = False
+preferred_platforms = []
