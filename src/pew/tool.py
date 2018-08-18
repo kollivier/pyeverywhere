@@ -78,6 +78,13 @@ templates = [
     "default",
 ]
 
+def get_default_platform():
+    if sys.platform.startswith('win'):
+        return 'win'
+    elif sys.platform.startswith('darwin'):
+        return 'mac'
+
+    return 'linux'
 
 import struct
 
@@ -759,7 +766,7 @@ def main():
     commands = parser.add_subparsers(title='commands', help='Commands to operate on PyEverywhere projects')
 
     build_opt = commands.add_parser('build', help="Build PyEverywhere binary")
-    build_opt.add_argument('platform', choices=platforms, help='Platform to build project for. Choices are: %r' % (platforms,))
+    build_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to build project for. Choices are: %r' % (platforms,))
     build_opt.add_argument('--release', action='store_true', help='Build the app in release mode.')
     build_opt.add_argument('--config', default=None, help='Specify a Python config file to use when building the app.')
     build_opt.set_defaults(func=build)
@@ -771,22 +778,22 @@ def main():
     new_opt.set_defaults(func=create)
 
     up_opt = commands.add_parser('init', help="Initialize the PyEverywhere dependencies for the project in the current working directory.")
-    up_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=init)
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")
-    run_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
+    run_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
     run_opt.add_argument('--config', default=None, help='Specify a Python config file to use when running the app. For iOS and Android, this must be specified in the build step.')
     run_opt.add_argument('args', nargs=argparse.REMAINDER)
     run_opt.set_defaults(func=run)
 
     test_opt = commands.add_parser('test', help="Run PyEverywhere project")
-    test_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
+    test_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
     test_opt.add_argument('--no-functional', action='store_true', help='Only run unit tests, do not start the GUI and run functional tests.')
     test_opt.set_defaults(func=test)
 
     up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
-    up_opt.add_argument('platform', choices=platforms, help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=update)
 
     config_text = ""
