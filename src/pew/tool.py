@@ -126,7 +126,8 @@ def run_python_script(script, args):
         version = sys.version[:3]
         py_exe = '{}/bin/python{}'.format(sys.real_prefix, version)
     result = run_command([py_exe, script, " ".join(args)])
-    del command_env['PYTHONHOME']
+    if sys.platform.startswith('darwin') and hasattr(sys, 'real_prefix'):
+        del command_env['PYTHONHOME']
     return result
 
 
