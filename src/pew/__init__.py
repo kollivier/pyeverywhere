@@ -252,17 +252,16 @@ def get_app_files_dir():
     """
     Returns the location where the application's support files should be stored.
     """
-    global platform
     global app_name
 
-    if platform == "mac":
+    if sys.platform == "darwin":
         return os.path.join(get_user_dir(), "Library", "Application Support", app_name)
-    elif platform == "win":
+    elif sys.platform.startswith("win"):
         app_files_dir = os.getenv('APPDATA')
         if app_files_dir is not None and os.path.exists(app_files_dir):
-            return app_files_dir
+            return os.path.join(app_files_dir, app_name)
         else:
-            return os.path.join(get_user_dir(), "Application Data")
+            return os.path.join(get_user_dir(), "Application Data", app_name)
 
     # iOS and Android store documents inside their own special folders, 
     # so the directory is already app-specific
