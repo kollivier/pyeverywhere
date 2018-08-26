@@ -604,6 +604,7 @@ def build(args):
             import py2exe
             sys.argv = [sys.argv[0], "py2exe"]
 
+        includes = []
         excludes = []
         packages = []
         plist = {
@@ -621,6 +622,12 @@ def build(args):
 
         if "packages" in info_json:
             packages.extend(info_json["packages"])
+
+        if "includes" in info_json:
+            includes.extend(info_json["includes"])
+
+        if "excludes" in info_json:
+            excludes.extend(info_json["excludes"])
 
         dist_dir = "dist/%s" % args.platform
         if not os.path.exists(dist_dir):
@@ -683,9 +690,12 @@ def build(args):
 
         # Make sure py2exe bundles the modules that six references
         # the Py3 version of py2exe natively supports this so this is a 2.x only fix
-        includes = []
         if sys.version_info[0] == 2:
-            includes = ["urllib", "SimpleHTTPServer"]
+            includes.extend(["urllib", "SimpleHTTPServer"])
+        else:
+            # The Py3 version, however, gets into infinite recursion while importing parse.
+            # see https://stackoverflow.com/questions/29649440/py2exe-runtimeerror-with-tweepy
+            excludes.append("six.moves.urllib.parse")
 
         py2exe_opts = {
             "dll_excludes": dll_excludes,
@@ -822,7 +832,7 @@ def main():
             sys.exit(1)
 
         global info_json
-        info_json = json.loads(open(info_file, "rb").read())
+        info_json = json.loads(open(info_file, "r").read())
         create_android_setup_sh(info_json)
     sys.exit(args.func(args))
 
