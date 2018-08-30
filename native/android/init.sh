@@ -41,9 +41,9 @@ then
     ./android-ndk.bin
 fi 
 
-echo Downloading http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz
+echo Downloading https://archive.apache.org/dist/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz
 
 if [ ! -d apache-ant-$ANT_VERSION ]
 then
-    curl --location http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
+    curl --location https://archive.apache.org/dist/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
 fi
