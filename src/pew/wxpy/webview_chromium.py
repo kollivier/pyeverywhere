@@ -137,7 +137,7 @@ class NativeWebView(object):
         pass
 
     def evaluate_javascript(self, js):
-        self.webview.GetBrowser().GetMainFrame().ExecuteJavascript(js)
+        self.webview.GetMainFrame().ExecuteJavascript(js)
 
     def OnClose(self, event):
         logging.info("OnClose called...")
