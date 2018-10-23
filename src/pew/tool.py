@@ -131,6 +131,15 @@ def run_python_script(script, args):
     return result
 
 
+def copy_data_files(data_files, build_dir):
+    for out_dir, files in data_files:
+        out_dir = os.path.join(build_dir, out_dir)
+        for filename in files:
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
+            shutil.copy(filename, out_dir)
+
+
 def codesign_mac(path, identity):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
 
@@ -363,6 +372,24 @@ def build(args):
             for ignore_dir in ignore_dirs:
                 ignore_paths.append(os.path.abspath(ignore_dir))
 
+    data_files = [('.', [os.path.join(cwd, "project_info.json")])]
+    asset_dirs = []
+    if "asset_dirs" in info_json:
+        asset_dirs = info_json["asset_dirs"]
+    else:
+        message = "WARNING: Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['src/files'] to your project_info.json file."
+        print(message)
+        asset_dirs = ['src/files']
+
+    for asset_dir in asset_dirs:
+        for root, dirs, files in os.walk(asset_dir):
+            files_in_dir = []
+            for afile in files:
+                if not afile.startswith("."):
+                    files_in_dir.append(os.path.join(root, afile))
+            if len(files_in_dir) > 0:
+                data_files.append((root.replace("src/", ""), files_in_dir))
+
     if args.platform == "android":
         filename = info_json["name"].replace(" ", "")
         if args.config and args.config.strip() != "":
@@ -408,6 +435,8 @@ def build(args):
             os.makedirs(parent_dir)
 
         copy_files(src_dir, build_dir, ignore_paths)
+        copy_data_files(data_files, build_dir)
+
         venv_dir = os.path.join(build_dir, "venv")
         if not os.path.exists(venv_dir):
             os.makedirs(venv_dir)
@@ -543,15 +572,10 @@ def build(args):
             plistlib.writePlist(plist, plist_file)
 
         dest_dir = os.path.join(project_build_dir, "Script")
-        files_src_dir = os.path.join(src_dir, "files")
-        script_ignore_paths = ignore_paths + [files_src_dir]
+        script_ignore_paths = ignore_paths + asset_dirs
         copy_files(src_dir, dest_dir, script_ignore_paths)
         copy_pew_module(dest_dir)
-        files_dest_dir = os.path.join(project_build_dir, "files")
-
-        # FIXME: We shouldn't need any logic to copy hardcoded directories such as this one.
-        if os.path.exists(files_src_dir):
-            copy_files(files_src_dir, files_dest_dir, ignore_paths)
+        copy_data_files(data_files, project_build_dir)
 
         project_file = os.path.join(project_build_dir, "PythonistaAppTemplate.xcodeproj")
         config_file = os.path.join(project_file, "project.pbxproj")
@@ -640,24 +664,6 @@ def build(args):
 
         # this is needed on Windows for py2exe to find scripts in the src directory
         sys.path.append(src_dir)
-
-        data_files = [('.', [os.path.join(cwd, "project_info.json")])]
-        asset_dirs = []
-        if "asset_dirs" in info_json:
-            asset_dirs = info_json["asset_dirs"]
-        else:
-            message = "Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['src/files'] to your project_info.json file."
-            print(message)
-            sys.exit(1)
-
-        for asset_dir in asset_dirs:
-            for root, dirs, files in os.walk(asset_dir):
-                files_in_dir = []
-                for afile in files:
-                    if not afile.startswith("."):
-                        files_in_dir.append(os.path.join(root, afile))
-                if len(files_in_dir) > 0:
-                    data_files.append((root.replace("src/", ""), files_in_dir))
 
         try:
             import cefpython3
