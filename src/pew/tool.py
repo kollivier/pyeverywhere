@@ -395,9 +395,20 @@ def build(args):
         if args.config and args.config.strip() != "":
             build_dir = os.path.join(build_dir, args.config)
 
-        icon_dir = os.path.join(cwd, "icons", "android")
-        icon = os.path.join(icon_dir, get_value_for_platform("icons", "android", "fakefile"))
-        print("Icon is %s" % icon)
+        icon_file = get_value_for_platform("icons", "android")
+        icon = "fakefile"  # A dummy value to make the p4a script happy since we don't pass this conditionally
+        if icon_file:
+            icon = os.path.abspath(icon_file)
+            if not os.path.exists(icon):
+                icon_dir = os.path.join(cwd, "icons", "android")
+                icon = os.path.join(icon_dir, icon_file)
+                logging.warning("Please specify a path to your icon that's relative to your project_info.json file")
+                logging.warning("Specifying android icons by filename only is deprecated and will be removed")
+
+            if not os.path.exists(icon):
+                print("Could not find specified icon file: %s" % icon_file)
+                sys.exit(1)
+
         whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
         launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
         orientation = get_value_for_platform("orientation", "android", "sensor")
