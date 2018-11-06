@@ -252,7 +252,7 @@ class WebUIView(NativeWebView):
             self.page_loaded = True
             if self.protocol is not None:
                 webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
-            if self.delegate:
+            if self.delegate and hasattr(self.delegate, 'load_complete'):
                 self.delegate.load_complete()
 
     def webview_did_fail_load(self, webview, error_code, error_msg):
