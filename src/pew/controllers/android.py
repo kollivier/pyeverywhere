@@ -56,7 +56,7 @@ class AndroidBuildController(BaseBuildController):
         android_env['ANDROIDSDK'] = "{}/android-sdk-{}".format(android_root, self.get_sdk_platform())
         android_env['ANDROIDNDKVER'] = self.android_ndk_version
         android_env['ANDROIDNDK'] = "{}/android-ndk-{}".format(android_root, self.android_ndk_version)
-
+        android_env['ANT_VERSION'] = self.ant_version
         android_env['ANT_HOME'] = "{}/apache-ant-{}".format(android_root, self.ant_version)
         paths = [
             android_env['ANDROIDNDK'],
@@ -72,7 +72,6 @@ class AndroidBuildController(BaseBuildController):
         return android_env
 
     def init(self):
-        self.create_android_setup_sh()
         self.create_distribution()
 
     def create_distribution(self):
@@ -108,25 +107,3 @@ class AndroidBuildController(BaseBuildController):
                 android_build_tools = android_sdk_info["build_tools"]
 
         return android_sdk, android_build_tools
-
-    def create_android_setup_sh(self):
-        """
-        setup.sh is a bash script that sets environment variables needed by PyEverywhere scripts.
-        This function generates the file based on the project's Android configuration settings.
-        :return:
-        """
-        cwd = os.getcwd()
-
-        android_sdk, android_build_tools = self.get_android_sdk_info()
-
-        android_native_dir = os.path.join(cwd, "native", "android")
-        if not os.path.exists(android_native_dir):
-            os.makedirs(android_native_dir)
-
-        android_setup_file = os.path.join(android_native_dir, "setup.sh")
-        f = open(android_setup_file, "w")
-        f.write("""
-    export ANDROIDAPI={}
-    export ANDROIDBUILDTOOLSVER={}
-    """.format(android_sdk, android_build_tools))
-        f.close()

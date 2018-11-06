@@ -784,9 +784,14 @@ def main():
             print("Unable to find project info file at %s. pew cannot continue." % info_file)
             sys.exit(1)
 
+        # FIXME: Remove these globals once we better encapsulate the build logic into controllers.
+        global command_env
         global info_json
         info_json = json.loads(open(info_file, "r").read())
         set_project_info(info_json)
+
+        controller = get_build_controller(args.platform, info_json)
+        command_env = controller.get_env()
 
     sys.exit(args.func(args))
 
