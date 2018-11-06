@@ -30,7 +30,7 @@ except NameError:
     pass
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
-rootdir = os.path.abspath(os.path.join(thisdir, "..", ".."))
+rootdir = os.path.abspath(os.path.join(thisdir, "..", "..", ".."))
 
 config_settings = {
     "android.root": "Path to the directory where the Android tools will be stored"
