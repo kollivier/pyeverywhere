@@ -21,7 +21,7 @@ setup(
     # test_suite = 'your.module.tests',
     entry_points={
         'console_scripts': [
-            'pew = pew.tool:main'
+            'pew = pew.cli.tool:main'
         ]
     }
 )

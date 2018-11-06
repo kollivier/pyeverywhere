@@ -18,6 +18,9 @@ from distutils.core import setup
 
 import pewtools
 
+from pew.controllers import get_build_controller
+from pew.controllers.utils import *
+
 if 'darwin' in sys.platform:
     import pbxproj
 
@@ -29,38 +32,15 @@ except NameError:
 thisdir = os.path.dirname(os.path.abspath(__file__))
 rootdir = os.path.abspath(os.path.join(thisdir, "..", ".."))
 
-config_dir = os.path.expanduser(os.path.join("~", ".pyeverywhere"))
-if not os.path.exists(config_dir):
-    os.makedirs(config_dir)
-
 config_settings = {
     "android.root": "Path to the directory where the Android tools will be stored"
 }
 
-config_file = os.path.join(config_dir, "config.json")
-pew_config = {}
-if os.path.exists(config_file):
-    pew_config = json.load(open(config_file))
+pew_config = get_pew_config()
 
 android_dir = os.path.join(rootdir, "native", "android")
 
 command_env = os.environ.copy()
-
-default_android_root = os.path.abspath(os.path.join(os.path.expanduser("~"), ".pyeverywhere", "native", "android"))
-android_root = default_android_root
-if "android.root" in pew_config:
-    android_root = pew_config['android.root']
-
-if not os.path.exists(android_root):
-    try:
-        os.makedirs(android_root)
-    except:
-        print("Unable to create android root, trying default...")
-        android_root = default_android_root
-        if not os.path.exists(android_root):
-            os.makedirs(android_root)
-
-command_env['ANDROID_ROOT'] = android_root
 
 verbose = False
 
@@ -166,7 +146,6 @@ def codesign_mac(path, identity):
             sys.exit(1)
 
 
-default_key = "default"
 cwd = os.getcwd()
 
 info_json = {}
@@ -201,51 +180,6 @@ def copy_pew_module(build_dir):
     # just copy ours over.
     if not os.path.exists(pew_dest_dir):
         shutil.copytree(pew_src_dir, pew_dest_dir)
-
-
-def get_value_for_config(key, config_name, default_return=None):
-    if key in info_json:
-        if "configs" in info_json[key] and config_name in info_json[key]["configs"]:
-            return info_json[key]["configs"][config_name]
-        elif default_key in info_json[key]:
-            return info_json[key][default_key]
-
-    return default_return
-
-
-def get_value_for_platform(key, platform_name, default_return=None):
-    if key in info_json:
-        if platform_name in info_json[key]:
-            return info_json[key][platform_name]
-        elif default_key in info_json[key]:
-            return info_json[key][default_key]
-
-    return default_return
-
-
-def create_android_setup_sh(info_json):
-    global cwd
-    android_sdk = "19"
-    android_build_tools = "23.0.3"
-
-    if "sdks" in info_json and "android" in info_json["sdks"]:
-        android_sdk_info = info_json["sdks"]["android"]
-        if "target_sdk" in android_sdk_info:
-            android_sdk = str(android_sdk_info["target_sdk"])
-        if "build_tools" in android_sdk_info:
-            android_build_tools = android_sdk_info["build_tools"]
-
-    android_native_dir = os.path.join(cwd, "native", "android")
-    if not os.path.exists(android_native_dir):
-        os.makedirs(android_native_dir)
-
-    android_setup_file = os.path.join(android_native_dir, "setup.sh")
-    f = open(android_setup_file, "w")
-    f.write("""
-export ANDROIDAPI={}
-export ANDROIDBUILDTOOLSVER={}
-""".format(android_sdk, android_build_tools))
-    f.close()
 
 
 def dir_is_pew(check_dir):
@@ -767,7 +701,9 @@ def init(args):
     """
     For now, this is just an alias for update.
     """
-    update(args)
+    # update(args)
+    controller = get_build_controller(args.platform, info_json)
+    controller.init()
 
 
 def update(args):
@@ -850,7 +786,8 @@ def main():
 
         global info_json
         info_json = json.loads(open(info_file, "r").read())
-        create_android_setup_sh(info_json)
+        set_project_info(info_json)
+
     sys.exit(args.func(args))
 
 if __name__ == "__main__":
