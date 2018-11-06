@@ -701,7 +701,7 @@ def init(args):
     """
     For now, this is just an alias for update.
     """
-    # update(args)
+    update(args)
     controller = get_build_controller(args.platform, info_json)
     controller.init()
 
