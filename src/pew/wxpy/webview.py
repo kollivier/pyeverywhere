@@ -57,7 +57,7 @@ class NativeWebView(object):
         self.view.ShowFullScreen(enable)
 
     def load_url(self, url):
-        self.webview.LoadURL(url)
+        wx.CallAfter(self.webview.LoadURL, url)
 
     def get_user_agent(self):
         return ""
