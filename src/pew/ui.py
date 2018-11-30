@@ -198,6 +198,19 @@ class WebUIView(NativeWebView):
         self.current_url = url
         super(WebUIView, self).load_url(url)
 
+    def get_view_state(self):
+        """
+        Get any view or app state that was natively persisted by pause / resume actions.
+
+        :return: A dictionary of persisted view or app state properties.
+        """
+
+        # not all backends implement this, so check that NativeWebView.get_persisted_state exists first
+        if hasattr(self, 'get_persisted_state'):
+            return self.get_persisted_state()
+
+        return {}
+
     def show(self):
         """
         Makes the web view visible on screen.

@@ -136,6 +136,13 @@ class NativeWebView(object):
         self.webview = AndroidWebView(client=self.client)
         self.callback.setWebView(self.webview)
 
+    def get_persisted_state(self):
+        state = {}
+        if PythonActivity.mSavedURL:
+            state['URL'] = PythonActivity.mSavedURL
+
+        return state
+
     @run_on_ui_thread
     def show(self):
         pass
