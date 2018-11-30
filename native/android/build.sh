@@ -62,7 +62,7 @@ fi
 
 echo "Packaging files"
 
-p4a apk --private=$4 $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
+p4a apk --private=$4 --window $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]
