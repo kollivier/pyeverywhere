@@ -55,6 +55,18 @@ echo "keyalias is ${13}"
 KEYINFO="--keystore ${12} --signkey ${13} --keystorepw ${14}"
 fi
 
+BLACKLIST=
+if [ ! -z "${15}" ]
+then
+  BLACKLIST="--blacklist ${15}"
+fi
+
+LAUNCH_BG="--presplash-color white"
+if [ ! -z "${16}" ]
+then
+  LAUNCH_BG="--presplash-color ${16}"
+fi
+
 DIST_DIR="$HOME/.local/share/python-for-android/dists"
 if [ "$(uname)" == "Darwin" ]; then
     DIST_DIR="$HOME/.python-for-android/dists"
@@ -62,7 +74,7 @@ fi
 
 echo "Packaging files"
 
-p4a apk --private=$4 --window $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
+p4a apk --private=$4 --window $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO $BLACKLIST $LAUNCH_BG
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]

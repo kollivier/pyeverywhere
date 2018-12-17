@@ -343,8 +343,17 @@ def build(args):
                 print("Could not find specified icon file: %s" % icon_file)
                 sys.exit(1)
 
-        whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
+        whitelist = ''
+        if get_value_for_platform("whitelist_file", "android"):
+            whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android"))
+
+
+        blacklist = ''
+        if get_value_for_platform("blacklist_file", "android"):
+            blacklist = os.path.abspath(get_value_for_platform("blacklist_file", "android"))
+
         launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
+        launch_bg = get_value_for_platform("launch_bg", "android", "white")
         orientation = get_value_for_platform("orientation", "android", "sensor")
         intent_filters = get_value_for_platform("intent_filters", "android", '')
         if len(intent_filters) > 0:
@@ -394,7 +403,7 @@ def build(args):
 
         shutil.rmtree(venv_dir)
 
-        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, intent_filters, keystore, keyalias, keypasswd]
+        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, intent_filters, keystore, keyalias, keypasswd, blacklist, launch_bg]
         returncode = run_command(cmd)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
@@ -417,9 +426,9 @@ def build(args):
             plist['CFBundleIconName'] = 'AppIcon'
             plist['CFBundleShortVersionString'] = version_short
             plist['UIStatusBarHidden'] = get_value_for_platform("hide_status_bar", "ios", True)
-            
+
             # These are needed because the Python libraries contain references to
-            # libs which need permissions. 
+            # libs which need permissions.
             plist['NSCalendarsUsageDescription'] = "This app requires access to your calendar information."
             plist['NSPhotoLibraryUsageDescription'] = "This app requires access to your photo library."
             plist['NSBluetoothPeripheralUsageDescription'] = "This app requires access to a bluetooth peripheral."
@@ -655,7 +664,7 @@ def build(args):
             "includes": includes
         }
         py2app_opts = {
-            "dist_dir": dist_dir, 
+            "dist_dir": dist_dir,
             'plist': plist,
             "packages": packages,
             "site_packages": True,
