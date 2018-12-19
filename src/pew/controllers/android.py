@@ -74,6 +74,12 @@ class AndroidBuildController(BaseBuildController):
     def init(self):
         self.create_distribution()
 
+    def get_dist_name(self):
+        return "{}_dist".format(self.project_info["name"].replace(" ", ""))
+
+    def get_python_dist_folder(self):
+        return os.path.expanduser('~/.python-for-android/dists/{}'.format(self.get_dist_name()))
+
     def create_distribution(self):
         """
         Creates an Android python distribution that meets the project specifications. Throws an error upon
@@ -82,7 +88,7 @@ class AndroidBuildController(BaseBuildController):
         cmd = [
             'p4a',
             'create',
-            '--dist_name', "{}_dist".format(self.project_info["name"].replace(" ", "")),
+            '--dist_name', self.get_dist_name(),
             '--bootstrap', self.bootstrap,
 
         ]
