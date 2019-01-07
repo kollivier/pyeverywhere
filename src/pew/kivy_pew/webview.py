@@ -81,7 +81,7 @@ class PEWebViewClientInterface(PythonJavaClass):
         if not self.load_complete:
             self.load_complete = True
             activity.removeLoadingScreen()
-            self.delegate.webview_did_finish_load(self.webview, url)
+        self.delegate.webview_did_finish_load(self.webview, url)
 
 
 class AndroidWebView(object):
