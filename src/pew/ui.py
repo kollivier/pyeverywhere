@@ -268,5 +268,8 @@ class WebUIView(NativeWebView):
             if self.delegate and hasattr(self.delegate, 'load_complete'):
                 self.delegate.load_complete()
 
+        if self.delegate and hasattr(self.delegate, "page_loaded"):
+            self.delegate.page_loaded(url)
+
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True  # make sure we don't wait forever if the page fails to load
