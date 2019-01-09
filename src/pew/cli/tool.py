@@ -357,15 +357,14 @@ def build(args):
         build_type = ""
         if args.release:
             build_type = "release"
-            signing = get_value_for_platform("codesign", "android", "")
-            keystore = os.path.abspath(signing['keystore'])
-            keyalias = signing['alias']
-            print("signing = %r" % (signing,))
-            print("keystore = %r, alias = %r" % (keystore, keyalias))
-            if 'passwd' in signing:
-                keypasswd = signing['passwd']
-            else:
-                keypasswd = getpass.getpass()
+            signing = get_value_for_platform("codesign", "android", None)
+            if signing:
+                keystore = os.path.abspath(signing['keystore'])
+                keyalias = signing['alias']
+                if 'passwd' in signing:
+                    keypasswd = signing['passwd']
+                else:
+                    keypasswd = getpass.getpass()
 
         if len(requirements) > 0:
             requirements = ",".join(requirements)
