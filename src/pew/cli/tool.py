@@ -393,7 +393,19 @@ def build(args):
 
         shutil.rmtree(venv_dir)
 
-        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, intent_filters, keystore, keyalias, keypasswd]
+        has_build_version_num = False
+        if "build_number" in info_json:
+            try:
+                int(info_json["build_number"])
+                has_build_version_num = True
+            except:
+                pass
+
+        if not has_build_version_num:
+            print("Android builds require the build_number to be set to an integer in addition to the version field.")
+            sys.exit(1)
+
+        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, intent_filters, keystore, keyalias, keypasswd, info_json["build_number"]]
         returncode = run_command(cmd)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
