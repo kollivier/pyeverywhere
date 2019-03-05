@@ -1,11 +1,17 @@
+import getpass
+import logging
 import os
+import shutil
 import subprocess
 import sys
 
 from .base import BaseBuildController
 from .utils import *
 
+import pewtools
 
+
+cwd = os.getcwd()
 default_android_root = os.path.abspath(os.path.join(os.path.expanduser("~"), ".pyeverywhere", "native", "android"))
 android_root = default_android_root
 if "android.root" in pew_config:
@@ -74,6 +80,118 @@ class AndroidBuildController(BaseBuildController):
     def init(self):
         self.create_distribution()
 
+    def build(self, args, settings):
+        src_dir = os.path.join(cwd, "src")
+        filename = self.project_info["name"].replace(" ", "")
+        build_dir = self.get_build_dir()
+        if args.config and args.config.strip() != "":
+            build_dir = os.path.join(self.get_build_dir(), args.config)
+
+        ignore_paths = settings['ignore_paths']
+        data_files = settings['data_files']
+        requirements = settings['requirements']
+
+        cmd = ['p4a', 'apk',
+                '--package', self.project_info['identifier'],
+                '--name', filename,
+                '--dist_name', '{}_dist'.format(filename),
+                '--version', self.project_info["version"],
+                '--private', build_dir
+        ]
+
+        if len(requirements) > 0:
+            requirements = ",".join(requirements)
+        else:
+            requirements = "python2,pyjnius,genericndkbuild"
+        cmd.extend(['--requirements', requirements])
+
+        has_build_version_num = False
+        if 'build_number' in self.project_info:
+            try:
+                int(self.project_info['build_number'])
+                has_build_version_num = True
+            except:
+                pass
+
+        if not has_build_version_num:
+            print("Android builds require the build_number to be set to an integer in addition to the version field.")
+            sys.exit(1)
+
+        cmd.extend(['--numeric-version', self.project_info['build_number']])
+
+        icon_file = get_value_for_platform("icons", "android")
+        if icon_file:
+            icon = os.path.abspath(icon_file)
+            if not os.path.exists(icon):
+                icon_dir = os.path.join(cwd, "icons", "android")
+                icon = os.path.join(icon_dir, icon_file)
+                logging.warning("Please specify a path to your icon that's relative to your project_info.json file")
+                logging.warning("Specifying android icons by filename only is deprecated and will be removed")
+
+            if not os.path.exists(icon):
+                print("Could not find specified icon file: %s" % icon_file)
+                sys.exit(1)
+
+            cmd.extend(['--icon', icon])
+
+        whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", ""))
+        if whitelist and os.path.exists(whitelist):
+            cmd.extend(['--whitelist', whitelist])
+        launch = os.path.abspath(get_value_for_platform("launch_images", "android", ""))
+        if launch and os.path.exists(launch):
+            cmd.extend(['--presplash', launch])
+        orientation = get_value_for_platform("orientation", "android", "sensor")
+        if orientation:
+            cmd.extend(['--orientation', orientation])
+        intent_filters = os.path.abspath(get_value_for_platform("intent_filters", "android", ""))
+        if intent_filters and os.path.exists(intent_filters):
+            cmd.extend(['--intent-filters', intent_filters])
+
+        keystore = ""
+        keyalias = ""
+        keypasswd = ""
+
+        build_type = ""
+        if args.release:
+            build_type = "release"
+            signing = get_value_for_platform("codesign", "android")
+            if signing:
+                keystore = os.path.abspath(signing['keystore'])
+                keyalias = signing['alias']
+                if 'passwd' in signing:
+                    keypasswd = signing['passwd']
+                else:
+                    keypasswd = getpass.getpass()
+
+                cmd.extend(['--keystore', keystore, '--signkey', keyalias, '--keystorepw', keypasswd])
+
+        if build_type == "release":
+            cmd.append('--release')
+
+        if os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
+
+        parent_dir = os.path.dirname(build_dir)
+        if not os.path.exists(parent_dir):
+            os.makedirs(parent_dir)
+
+        copy_files(src_dir, build_dir, ignore_paths)
+        copy_data_files(data_files, build_dir)
+
+        venv_dir = os.path.join(build_dir, "venv")
+        if not os.path.exists(venv_dir):
+            os.makedirs(venv_dir)
+        if "packages" in self.project_info:
+            python = None
+            if args.platform in ["ios", "android"]:
+                python = "python2.7"
+            pewtools.copy_deps_to_build(self.project_info["packages"], venv_dir, build_dir, python)
+        copy_pew_module(build_dir)
+
+        shutil.rmtree(venv_dir)
+
+        return self.run_command(cmd)
+
     def get_dist_name(self):
         return "{}_dist".format(self.project_info["name"].replace(" ", ""))
 
@@ -96,7 +214,7 @@ class AndroidBuildController(BaseBuildController):
         if len(reqs) > 0:
             cmd.extend(['--requirements', ','.join(reqs)])
 
-        subprocess.call(cmd, env=self.get_env())
+        return self.run_cmd(cmd)
 
     def get_android_sdk_info(self):
         """

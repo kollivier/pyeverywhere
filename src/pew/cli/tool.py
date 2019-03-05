@@ -107,15 +107,6 @@ def run_python_script(script, args):
     return result
 
 
-def copy_data_files(data_files, build_dir):
-    for out_dir, files in data_files:
-        out_dir = os.path.join(build_dir, out_dir)
-        for filename in files:
-            if not os.path.exists(out_dir):
-                os.makedirs(out_dir)
-            shutil.copy(filename, out_dir)
-
-
 def codesign_mac(path, identity):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
 
@@ -147,35 +138,6 @@ cwd = os.getcwd()
 info_json = {}
 
 info_file = os.path.join(cwd, "project_info.json")
-
-
-def copy_files(src_dir, build_dir, ignore_paths):
-    def _logpath(path, names):
-        for ignore_dir in ignore_paths:
-            if ignore_dir in path:
-                print("Ignoring %s" % path)
-                return names
-        print("Copying %s" % path)
-        return []
-    ignore = _logpath
-
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
-
-    print("Copying source files to build tree, please wait...")
-    shutil.copytree(src_dir, build_dir, ignore=ignore)
-
-    shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
-
-
-def copy_pew_module(build_dir):
-    pew_src_dir = os.path.join(rootdir, "src", "pew")
-    pew_dest_dir = os.path.join(build_dir, "pew")
-    # For now, we want to allow developers to use their own customized pew module
-    # until we offer more advanced configuration options. If they don't though,
-    # just copy ours over.
-    if not os.path.exists(pew_dest_dir):
-        shutil.copytree(pew_src_dir, pew_dest_dir)
 
 
 def dir_is_pew(check_dir):
@@ -320,89 +282,15 @@ def build(args):
             if len(files_in_dir) > 0:
                 data_files.append((root.replace("src/", ""), files_in_dir))
 
+    settings = {
+        'requirements': requirements,
+        'ignore_paths': ignore_paths,
+        'data_files': data_files
+    }
+
     if args.platform == "android":
-        filename = info_json["name"].replace(" ", "")
-        if args.config and args.config.strip() != "":
-            build_dir = os.path.join(build_dir, args.config)
-
-        icon_file = get_value_for_platform("icons", "android")
-        icon = "fakefile"  # A dummy value to make the p4a script happy since we don't pass this conditionally
-        if icon_file:
-            icon = os.path.abspath(icon_file)
-            if not os.path.exists(icon):
-                icon_dir = os.path.join(cwd, "icons", "android")
-                icon = os.path.join(icon_dir, icon_file)
-                logging.warning("Please specify a path to your icon that's relative to your project_info.json file")
-                logging.warning("Specifying android icons by filename only is deprecated and will be removed")
-
-            if not os.path.exists(icon):
-                print("Could not find specified icon file: %s" % icon_file)
-                sys.exit(1)
-
-        whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", "fakefile"))
-        launch = os.path.abspath(get_value_for_platform("launch_images", "android", "fakefile"))
-        orientation = get_value_for_platform("orientation", "android", "sensor")
-        intent_filters = get_value_for_platform("intent_filters", "android", '')
-        if len(intent_filters) > 0:
-            intent_filters = os.path.abspath(intent_filters)
-
-        keystore = ""
-        keyalias = ""
-        keypasswd = ""
-
-        build_type = ""
-        if args.release:
-            build_type = "release"
-            signing = get_value_for_platform("codesign", "android", None)
-            if signing:
-                keystore = os.path.abspath(signing['keystore'])
-                keyalias = signing['alias']
-                if 'passwd' in signing:
-                    keypasswd = signing['passwd']
-                else:
-                    keypasswd = getpass.getpass()
-
-        if len(requirements) > 0:
-            requirements = ",".join(requirements)
-        else:
-            requirements = ""
-
-        if os.path.exists(build_dir):
-            shutil.rmtree(build_dir)
-
-        parent_dir = os.path.dirname(build_dir)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
-
-        copy_files(src_dir, build_dir, ignore_paths)
-        copy_data_files(data_files, build_dir)
-
-        venv_dir = os.path.join(build_dir, "venv")
-        if not os.path.exists(venv_dir):
-            os.makedirs(venv_dir)
-        if "packages" in info_json:
-            python = None
-            if args.platform in ["ios", "android"]:
-                python = "python2.7"
-            pewtools.copy_deps_to_build(info_json["packages"], venv_dir, build_dir, python)
-        copy_pew_module(build_dir)
-
-        shutil.rmtree(venv_dir)
-
-        has_build_version_num = False
-        if "build_number" in info_json:
-            try:
-                int(info_json["build_number"])
-                has_build_version_num = True
-            except:
-                pass
-
-        if not has_build_version_num:
-            print("Android builds require the build_number to be set to an integer in addition to the version field.")
-            sys.exit(1)
-
-        cmd = ["bash", os.path.join(android_dir, "build.sh"), info_json["identifier"], filename, info_json["version"], build_dir, icon, launch, whitelist, orientation, requirements, build_type, intent_filters, keystore, keyalias, keypasswd, info_json["build_number"]]
-        returncode = run_command(cmd)
+        controller = get_build_controller(args.platform, info_json)
+        returncode = controller.build(args, settings)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
         if not os.path.exists(project_dir):

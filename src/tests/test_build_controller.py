@@ -17,6 +17,7 @@ class MockArgs:
         self.platform = platform
         self.config = None
         self.release = False
+        self.verbose = True
 
 
 class BuildControllerTestCase(unittest.TestCase):
