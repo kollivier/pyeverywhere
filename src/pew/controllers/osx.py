@@ -17,7 +17,7 @@ class OSXBuildController(BaseBuildController):
     app_ext = '.app'
 
     def init(self):
-        self.create_distribution()
+        pass
 
     def dist(self):
         if not os.path.exists(self.get_app_path()):

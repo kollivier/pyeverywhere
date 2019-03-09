@@ -656,6 +656,7 @@ def build(args):
             excludes.append("six.moves.urllib.parse")
 
         py2exe_opts = {
+            "dist_dir": dist_dir,
             "dll_excludes": dll_excludes,
             "packages": packages,
             "excludes": excludes,
