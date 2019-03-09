@@ -6,11 +6,10 @@ all be migrated here.
 This will allow for programmatic control over builds, configuration, etc. as an alternative to using the command line.
 """
 
-from . import android
-from . import base
+from . import android, base, osx
 
 
-def get_build_controller(platform, project_info):
+def get_build_controller(args, project_info_file):
     """
     Returns a build controller for the targeted platform.
 
@@ -18,7 +17,10 @@ def get_build_controller(platform, project_info):
     :param project_info: A dictionary containing the project_info.json data.
     :return:
     """
-    if platform == 'android':
-        return android.AndroidBuildController(project_info)
+    impl = base.BaseBuildController
+    if args.platform == 'android':
+        impl = android.AndroidBuildController
+    if args.platform == 'osx':
+        impl = osx.OSXBuildController
 
-    return base.BaseBuildController(project_info)
+    return impl(project_info_file, args)

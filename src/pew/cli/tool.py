@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import copy
 import getpass
 import glob
 import json
@@ -18,8 +19,13 @@ from distutils.core import setup
 
 import pewtools
 
+from pew.constants import platforms as pew_platforms
 from pew.controllers import get_build_controller
 from pew.controllers.utils import *
+
+# we support starting a local server to run in the browser, but it is not a supported target platform for pew,
+# so we add it here.
+platforms = copy.copy(pew_platforms) + ['browser']
 
 if 'darwin' in sys.platform:
     import pbxproj
@@ -44,16 +50,6 @@ command_env = os.environ.copy()
 
 verbose = False
 
-
-platforms = [
-    "android",
-    "browser",
-    "ios",
-    "linux",
-    "mac",
-    "win"
-]
-
 templates = [
     "default",
 ]
@@ -62,7 +58,7 @@ def get_default_platform():
     if sys.platform.startswith('win'):
         return 'win'
     elif sys.platform.startswith('darwin'):
-        return 'mac'
+        return 'osx'
 
     return 'linux'
 
@@ -575,8 +571,8 @@ def build(args):
 
         run_command(["open", project_file.replace(" ", "\\ ")])
 
-    elif args.platform in ["mac", "win"]:
-        if args.platform == 'mac':
+    elif args.platform in ["osx", "win"]:
+        if args.platform == 'osx':
             import py2app
 
             sys.argv = [sys.argv[0], "py2app"]
@@ -713,7 +709,7 @@ def init(args):
     For now, this is just an alias for update.
     """
     update(args)
-    controller = get_build_controller(args.platform, info_json)
+    controller = get_build_controller(args, info_file)
     controller.init()
 
 
@@ -734,9 +730,17 @@ def update(args):
             logging.error(traceback.format_exc(e))
 
 
+def dist(args):
+    """
+    For now, this is just an alias for update.
+    """
+    controller = get_build_controller(args, info_file)
+    controller.dist()
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", dest="verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("-q", dest="verbose", action="store_false", help="Disable verbose output")
     # parser.add_argument("command", description="", help="Command to run. Acceptable commands are: %r" % commands)
     commands = parser.add_subparsers(title='commands', help='Commands to operate on PyEverywhere projects')
 
@@ -762,14 +766,19 @@ def main():
     run_opt.add_argument('args', nargs=argparse.REMAINDER)
     run_opt.set_defaults(func=run)
 
-    test_opt = commands.add_parser('test', help="Run PyEverywhere project")
-    test_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
+    test_opt = commands.add_parser('test', help="Run PyEverywhere project tests")
+    test_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project tests on. Choices are: %r' % (platforms,))
     test_opt.add_argument('--no-functional', action='store_true', help='Only run unit tests, do not start the GUI and run functional tests.')
     test_opt.set_defaults(func=test)
 
     up_opt = commands.add_parser('update', help="Update the PyEverywhere dependencies for the project in the current working directory.")
     up_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
     up_opt.set_defaults(func=update)
+
+    dist_opt = commands.add_parser('package', help="Create a distributable package for the PyEverywhere project.")
+    dist_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to distribute the project for. Choices are: %r' % (platforms,))
+    dist_opt.add_argument('--config', default=None, help='Specify a Python config file to use when running the app. For iOS and Android, this must be specified in the build step.')
+    dist_opt.set_defaults(func=dist)
 
     config_text = ""
     for name in config_settings:
@@ -801,7 +810,7 @@ def main():
         info_json = json.loads(open(info_file, "r").read())
         set_project_info(info_json)
 
-        controller = get_build_controller(args.platform, info_json)
+        controller = get_build_controller(args, info_file)
         command_env = controller.get_env()
 
     sys.exit(args.func(args))
