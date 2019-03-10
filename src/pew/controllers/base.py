@@ -91,6 +91,27 @@ class BaseBuildController:
             os.makedirs(platform_dir)
         return platform_dir
 
+    def get_app_data_files(self):
+        asset_dirs = []
+        data_files = []
+        if "asset_dirs" in self.project_info:
+            asset_dirs = self.project_info["asset_dirs"]
+        else:
+            message = "WARNING: Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['src/files'] to your project_info.json file."
+            print(message)
+            asset_dirs = ['src/files']
+
+        for asset_dir in asset_dirs:
+            for root, dirs, files in os.walk(asset_dir):
+                files_in_dir = []
+                for afile in files:
+                    if not afile.startswith("."):
+                        files_in_dir.append(os.path.join(root, afile))
+                if len(files_in_dir) > 0:
+                    data_files.append((root.replace("src/", ""), files_in_dir))
+
+        return data_files
+
     def get_python_dist_folder(self):
         """
         Some platforms, particularly mobile platforms, require a cross-compiled version of Python for that platform.
@@ -163,6 +184,7 @@ class BaseBuildController:
         # this is needed on Windows for py2exe to find scripts in the src directory
         sys.path.append(os.path.join(self.project_root, 'src'))
 
+        data_files.extend(self.get_app_data_files())
         data_files.extend(self.get_platform_data_files())
 
         print("data_files = %r" % data_files)
@@ -186,13 +208,15 @@ class BaseBuildController:
             "includes": includes
         }
 
-        return setup(name=name,
+        setup(name=name,
               version=self.project_info["version"],
               options=self.get_build_options(common_options),
               app=['src/main.py'],
               windows=['src/main.py'],
               data_files=data_files
         )
+
+        return 0
 
     def run_cmd(self, cmd):
         """

@@ -1,13 +1,39 @@
-import os
+import glob
+import logging
 import subprocess
 import sys
-import tempfile
 
 from .base import BaseBuildController
 from .utils import *
 
 this_dir = os.path.abspath(os.path.dirname(__file__))
 files_dir = os.path.join(this_dir, 'files')
+
+
+def codesign_mac(path, identity):
+    cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
+
+    cmd.append(path)
+    logging.info("running %s" % " ".join(cmd))
+
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+    for line in proc.stdout:
+        logging.info(line)
+    for line in proc.stderr:
+        logging.error(line)
+
+    if proc.returncode != 0:
+        logging.error("Code signing failed")
+        print("Unable to codesign %s" % path)
+        sys.exit(1)
+    else:
+        logging.info("Code signing succeeded for %s" % path)
+        cmd = ['codesign', "--verify", "--deep", "--verbose=4", path]
+        logging.info("calling %s" % " ".join(cmd))
+        if subprocess.call(cmd) != 0:
+            print("Code signed application failed validation.")
+            sys.exit(1)
 
 
 class OSXBuildController(BaseBuildController):
@@ -20,7 +46,30 @@ class OSXBuildController(BaseBuildController):
         pass
 
     def build(self, settings):
-        return self.distutils_build()
+        returncode = self.distutils_build()
+        if "codesign" in info_json:
+            base_path = self.get_app_path()
+            print("base_path = %r" % base_path)
+            # remove the .py files and the .pyo files as we shouldn't use them
+            # running a .py file in the bundle can modify it.
+            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources", "lib", "python2.7")):
+                for afile in files:
+                    fullpath = os.path.join(root, afile)
+                    ext = os.path.splitext(fullpath)[1]
+                    if ext in ['.py', '.pyo']:
+                        os.remove(fullpath)
+
+            sign_paths = []
+            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
+            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
+            exes = ["Python"]
+            for exe in exes:
+                sign_paths.append(os.path.join(base_path, 'Contents', 'MacOS', exe))
+            sign_paths.append(base_path)  # the main app needs to be signed last
+            for path in sign_paths:
+                codesign_mac(path, info_json["codesign"]["osx"]["identity"])
+
+        return returncode
 
     def dist(self):
         if not os.path.exists(self.get_app_path()):

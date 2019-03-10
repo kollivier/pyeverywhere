@@ -2,7 +2,6 @@
 
 import argparse
 import copy
-import getpass
 import glob
 import json
 import logging
@@ -103,32 +102,6 @@ def run_python_script(script, args):
     if sys.platform.startswith('darwin') and hasattr(sys, 'real_prefix'):
         del command_env['PYTHONHOME']
     return result
-
-
-def codesign_mac(path, identity):
-    cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
-
-    cmd.append(path)
-    logging.info("running %s" % " ".join(cmd))
-
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
-    for line in proc.stdout:
-        logging.info(line)
-    for line in proc.stderr:
-        logging.error(line)
-
-    if proc.returncode != 0:
-        logging.error("Code signing failed")
-        print("Unable to codesign %s" % path)
-        sys.exit(1)
-    else:
-        logging.info("Code signing succeeded for %s" % path)
-        cmd = ['codesign', "--verify", "--deep", "--verbose=4", path]
-        logging.info("calling %s" % " ".join(cmd))
-        if subprocess.call(cmd) != 0:
-            print("Code signed application failed validation.")
-            sys.exit(1)
 
 
 cwd = os.getcwd()
@@ -249,6 +222,8 @@ def build(args):
     returncode = 0
     copy_config_file(args)
 
+    controller = get_build_controller(args, info_file)
+
     src_dir = os.path.join(cwd, "src")
     build_dir = os.path.join(cwd, "build", args.platform)
     requirements = get_value_for_platform("requirements", args.platform, [])
@@ -262,23 +237,7 @@ def build(args):
             for ignore_dir in ignore_dirs:
                 ignore_paths.append(os.path.abspath(ignore_dir))
 
-    data_files = [('.', [os.path.join(cwd, "project_info.json")])]
-    asset_dirs = []
-    if "asset_dirs" in info_json:
-        asset_dirs = info_json["asset_dirs"]
-    else:
-        message = "WARNING: Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['src/files'] to your project_info.json file."
-        print(message)
-        asset_dirs = ['src/files']
-
-    for asset_dir in asset_dirs:
-        for root, dirs, files in os.walk(asset_dir):
-            files_in_dir = []
-            for afile in files:
-                if not afile.startswith("."):
-                    files_in_dir.append(os.path.join(root, afile))
-            if len(files_in_dir) > 0:
-                data_files.append((root.replace("src/", ""), files_in_dir))
+    data_files = controller.get_app_data_files()
 
     settings = {
         'requirements': requirements,
@@ -287,7 +246,6 @@ def build(args):
     }
 
     if args.platform == "android":
-        controller = get_build_controller(args, info_file)
         returncode = controller.build(args, settings)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
@@ -458,30 +416,7 @@ def build(args):
         run_command(["open", project_file.replace(" ", "\\ ")])
 
     elif args.platform in ["osx", "win"]:
-        controller = get_build_controller(args, info_file)
-        controller.build(settings)
-
-        if sys.platform.startswith("darwin") and "codesign" in info_json:
-            base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
-            print("base_path = %r" % base_path)
-            # remove the .py files and the .pyo files as we shouldn't use them
-            # running a .py file in the bundle can modify it.
-            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources", "lib", "python2.7")):
-                for afile in files:
-                    fullpath = os.path.join(root, afile)
-                    ext = os.path.splitext(fullpath)[1]
-                    if ext in ['.py', '.pyo']:
-                        os.remove(fullpath)
-
-            sign_paths = []
-            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
-            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
-            exes = ["Python"]
-            for exe in exes:
-                sign_paths.append(os.path.join(base_path, 'Contents', 'MacOS', exe))
-            sign_paths.append(base_path)  # the main app needs to be signed last
-            for path in sign_paths:
-                codesign_mac(path, info_json["codesign"]["osx"]["identity"])
+        returncode = controller.build(settings)
 
     return returncode
 
