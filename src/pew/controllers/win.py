@@ -1,7 +1,5 @@
-import os
-import subprocess
+import glob
 import sys
-import tempfile
 
 from .base import BaseBuildController
 from .utils import *
@@ -15,6 +13,7 @@ class WinBuildController(BaseBuildController):
     This class manages OS X builds of PyEverywhere projects.
     """
     app_ext = '.exe'
+    cefpython_excludes = []
 
     def init(self):
         pass
@@ -24,6 +23,65 @@ class WinBuildController(BaseBuildController):
 
     def get_install_generator_path(self):
         return r'C:\Program Files (x86)\Inno Setup 5\iscc.exe'
+
+    def get_dll_excludes(self):
+        """
+        By default, py2exe detects and bundles a lot of system DLLs with the Python app. While this is necessary
+        for some DLLs, it can actually cause issues because of conflicts between the version of the bundled DLL
+        and the system DLL. This returns a list of system DLLs that we are not to bundle.
+
+        :return: A list of system DLLs not to bundle with the app.
+        """
+
+        dll_excludes = [
+            'combase.dll', 'credui.dll', 'crypt32.dll', 'cryptui.dll', 'd3d11.dll', 'd3d9.dll', 'dbghelp.dll',
+            'dhcpcsvc.dll', 'dwmapi.dll', 'dwrite.dll', 'dxgi.dll', 'dxva2.dll', 'fontsub.dll', 'iertutil.dll',
+            'iphlpapi.dll', 'mpr.dll', 'msvcp90.dll', 'ncrypt.dll', 'nsi.dll', 'oleacc.dll', 'oleacc.dll',
+            'powrprof.dll', 'psapi.dll', 'psapi.dll', 'secur32.dll', 'setupapi.dll', 'setupapi.dll', 'urlmon.dll',
+            'userenv.dll', 'userenv.dll', 'usp10.dll', 'webio.dll', 'winhttp.dll', 'wininet.dll', 'winnsi.dll',
+            'wintrust.dll', 'wtsapi.dll', 'wtsapi32.dll'
+        ]  # phew...
+
+        return dll_excludes
+
+    def get_build_options(self, common_options):
+        py2exe_opts = {
+            "dist_dir": self.get_dist_dir(),
+            "dll_excludes": self.get_dll_excludes(),
+            "packages": common_options['packages'],
+            "excludes": common_options['excludes'] + self.cefpython_excludes,
+            "includes": common_options['includes']
+        }
+
+        return {'py2exe': py2exe_opts}
+
+    def get_platform_data_files(self):
+        data_files = []
+        try:
+            import cefpython3
+            cefp = os.path.dirname(cefpython3.__file__)
+            cef_files = ['%s/icudtl.dat' % cefp]
+            cef_files.extend(glob.glob('%s/*.exe' % cefp))
+            cef_files.extend(glob.glob('%s/*.dll' % cefp))
+            cef_files.extend(glob.glob('%s/*.pak' % cefp))
+            cef_files.extend(glob.glob('%s/*.bin' % cefp))
+            data_files.extend([('', cef_files),
+                ('locales', ['%s/locales/en-US.pak' % cefp]),
+                ]
+            )
+            for cef_pyd in glob.glob(os.path.join(cefp, 'cefpython_py*.pyd')):
+                version_str = "{}{}.pyd".format(sys.version_info[0], sys.version_info[1])
+                if not cef_pyd.endswith(version_str):
+                    module_name = 'cefpython3.' + os.path.basename(cef_pyd).replace('.pyd', '')
+
+                    print("Excluding pyd: {}".format(module_name))
+                    self.cefpython_excludes.append(module_name)
+
+        except:  # TODO: Print the error information if verbose is set.
+            pass  # if cefpython is not found, we fall back to the stock OS browser
+
+    def build(self, settings):
+        return self.distutils_build()
 
     def dist(self):
         if not os.path.exists(self.get_app_path()):

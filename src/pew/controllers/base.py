@@ -1,6 +1,9 @@
 import json
 import os
 import subprocess
+import sys
+
+from distutils.core import setup
 
 
 class BaseBuildController:
@@ -97,6 +100,21 @@ class BaseBuildController:
         """
         return None
 
+    def get_build_options(self):
+        """
+        Returns a platform-specific dictionary of build options, ready to pass to setup's options argument.
+
+        :return: A dictionary of build options.
+        """
+
+    def get_platform_data_files(self):
+        """
+        This function returns a list of any platform or dependency-specific files that need bundled with the app
+        that are not automatically bundled by the platform app build tools.
+
+        :return: A list of (subdir, [files...]) tuples in the format expected by setup's data_files argument.
+        """
+
     def init(self):
         """
         Downloads and initializes any components needed to build for the chosen platform.
@@ -109,12 +127,72 @@ class BaseBuildController:
         Build outputs will go to the build directory (see get_build_dir()), while any final, packagable outputs
         will go to the distribution directory (see get_dist_dir()).
         """
+        pass
 
     def dist(self):
         """
         Creates a distributable package for your app. This command can only be run after a successful build.
         """
         pass
+
+    def distutils_build(self):
+        if self.platform == 'osx':
+            import py2app
+
+            sys.argv = [sys.argv[0], "py2app"]
+        else:
+            import py2exe
+            sys.argv = [sys.argv[0], "py2exe"]
+
+        includes = []
+        excludes = []
+        packages = []
+        data_files = [('.', [os.path.join(self.project_root, "project_info.json")])]
+
+        if "packages" in self.project_info:
+            packages.extend(self.project_info["packages"])
+
+        if "includes" in self.project_info:
+            includes.extend(self.project_info["includes"])
+
+        if "excludes" in self.project_info:
+            excludes.extend(self.project_info["excludes"])
+
+        dist_dir = self.get_dist_dir()
+
+        # this is needed on Windows for py2exe to find scripts in the src directory
+        sys.path.append(os.path.join(self.project_root, 'src'))
+
+        data_files.extend(self.get_platform_data_files())
+
+        print("data_files = %r" % data_files)
+        name = self.project_info["name"]
+        # workaround a bug in py2exe where it expects strings instead of Unicode
+        if self.platform == 'win':
+            name = name.encode('utf-8')
+
+        # Make sure py2exe bundles the modules that six references
+        # the Py3 version of py2exe natively supports this so this is a 2.x only fix
+        if sys.version_info[0] == 2:
+            includes.extend(["urllib", "SimpleHTTPServer"])
+        else:
+            # The Py3 version, however, gets into infinite recursion while importing parse.
+            # see https://stackoverflow.com/questions/29649440/py2exe-runtimeerror-with-tweepy
+            excludes.append("six.moves.urllib.parse")
+
+        common_options = {
+            'packages': packages,
+            "excludes": excludes,
+            "includes": includes
+        }
+
+        return setup(name=name,
+              version=self.project_info["version"],
+              options=self.get_build_options(common_options),
+              app=['src/main.py'],
+              windows=['src/main.py'],
+              data_files=data_files
+        )
 
     def run_cmd(self, cmd):
         """

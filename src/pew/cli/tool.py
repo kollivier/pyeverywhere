@@ -15,8 +15,6 @@ import sys
 import tempfile
 import webbrowser
 
-from distutils.core import setup
-
 import pewtools
 
 from pew.constants import platforms as pew_platforms
@@ -289,7 +287,7 @@ def build(args):
     }
 
     if args.platform == "android":
-        controller = get_build_controller(args.platform, info_json)
+        controller = get_build_controller(args, info_file)
         returncode = controller.build(args, settings)
     if args.platform == "ios":
         project_dir = os.path.join(cwd, "native", "ios", "PythonistaAppTemplate-master")
@@ -460,113 +458,8 @@ def build(args):
         run_command(["open", project_file.replace(" ", "\\ ")])
 
     elif args.platform in ["osx", "win"]:
-        if args.platform == 'osx':
-            import py2app
-
-            sys.argv = [sys.argv[0], "py2app"]
-        else:
-            import py2exe
-            sys.argv = [sys.argv[0], "py2exe"]
-
-        includes = []
-        excludes = []
-        packages = []
-        plist = {
-            'CFBundleIdentifier': info_json["identifier"],
-            # Make sure the browser will load localhost URLs
-            'NSAppTransportSecurity': {
-                'NSAllowsArbitraryLoads': True,
-                'NSExceptionDomains': {
-                    'localhost': {
-                        'NSExceptionAllowsInsecureHTTPLoads': True
-                    }
-                }
-            }
-        }
-
-        if "packages" in info_json:
-            packages.extend(info_json["packages"])
-
-        if "includes" in info_json:
-            includes.extend(info_json["includes"])
-
-        if "excludes" in info_json:
-            excludes.extend(info_json["excludes"])
-
-        dist_dir = "dist/%s" % args.platform
-        if not os.path.exists(dist_dir):
-            os.makedirs(dist_dir)
-
-        dll_excludes = ["combase.dll", "credui.dll", "crypt32.dll", "dhcpcsvc.dll", "msvcp90.dll", "mpr.dll", "oleacc.dll", "powrprof.dll", "psapi.dll", "setupapi.dll", "userenv.dll",  "usp10.dll", "wtsapi32.dll"]
-        dll_excludes.extend(["iertutil.dll", "iphlpapi.dll", "nsi.dll", "psapi.dll", "oleacc.dll", "urlmon.dll", "Secur32.dll", "setupapi.dll", "userenv.dll", "webio.dll","wininet.dll", "winhttp.dll", "winnsi.dll", "wtsapi.dll"])
-
-        dll_excludes.extend(["cryptui.dll", "d3d9.dll", "d3d11.dll", "dbghelp.dll", "dwmapi.dll", "dwrite.dll", "dxgi.dll", "dxva2.dll", "fontsub.dll", "ncrypt.dll", "wintrust.dll"])
-
-        # this is needed on Windows for py2exe to find scripts in the src directory
-        sys.path.append(src_dir)
-
-        try:
-            import cefpython3
-            cefp = os.path.dirname(cefpython3.__file__)
-            cef_files = ['%s/icudtl.dat' % cefp]
-            cef_files.extend(glob.glob('%s/*.exe' % cefp))
-            cef_files.extend(glob.glob('%s/*.dll' % cefp))
-            cef_files.extend(glob.glob('%s/*.pak' % cefp))
-            cef_files.extend(glob.glob('%s/*.bin' % cefp))
-            data_files.extend([('', cef_files),
-                ('locales', ['%s/locales/en-US.pak' % cefp]),
-                ]
-            )
-            for cef_pyd in glob.glob(os.path.join(cefp, 'cefpython_py*.pyd')):
-                version_str = "{}{}.pyd".format(sys.version_info[0], sys.version_info[1])
-                if not cef_pyd.endswith(version_str):
-                    module_name = 'cefpython3.' + os.path.basename(cef_pyd).replace('.pyd', '')
-
-                    print("Excluding pyd: {}".format(module_name))
-                    excludes.append(module_name)
-
-        except:  # TODO: Print the error information if verbose is set.
-            pass  # if cefpython is not found, we fall back to the stock OS browser
-
-        print("data_files = %r" % data_files)
-        name = info_json["name"]
-        # workaround a bug in py2exe where it expects strings instead of Unicode
-        if args.platform == 'win':
-            name = name.encode('utf-8')
-
-        # Make sure py2exe bundles the modules that six references
-        # the Py3 version of py2exe natively supports this so this is a 2.x only fix
-        if sys.version_info[0] == 2:
-            includes.extend(["urllib", "SimpleHTTPServer"])
-        else:
-            # The Py3 version, however, gets into infinite recursion while importing parse.
-            # see https://stackoverflow.com/questions/29649440/py2exe-runtimeerror-with-tweepy
-            excludes.append("six.moves.urllib.parse")
-
-        py2exe_opts = {
-            "dist_dir": dist_dir,
-            "dll_excludes": dll_excludes,
-            "packages": packages,
-            "excludes": excludes,
-            "includes": includes
-        }
-        py2app_opts = {
-            "dist_dir": dist_dir, 
-            'plist': plist,
-            "packages": packages,
-            "site_packages": True,
-        }
-
-        setup(name=name,
-              version=info_json["version"],
-              options={
-                  'py2app': py2app_opts,
-                  'py2exe': py2exe_opts
-              },
-              app=['src/main.py'],
-              windows=['src/main.py'],
-              data_files=data_files
-        )
+        controller = get_build_controller(args, info_file)
+        controller.build(settings)
 
         if sys.platform.startswith("darwin") and "codesign" in info_json:
             base_path = os.path.join(dist_dir, "%s.app" % info_json["name"])
