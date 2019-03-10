@@ -47,7 +47,7 @@ class OSXBuildController(BaseBuildController):
 
     def build(self, settings):
         returncode = self.distutils_build()
-        if "codesign" in info_json:
+        if "codesign" in self.project_info:
             base_path = self.get_app_path()
             print("base_path = %r" % base_path)
             # remove the .py files and the .pyo files as we shouldn't use them
@@ -67,7 +67,7 @@ class OSXBuildController(BaseBuildController):
                 sign_paths.append(os.path.join(base_path, 'Contents', 'MacOS', exe))
             sign_paths.append(base_path)  # the main app needs to be signed last
             for path in sign_paths:
-                codesign_mac(path, info_json["codesign"]["osx"]["identity"])
+                codesign_mac(path, self.project_info["codesign"]["osx"]["identity"])
 
         return returncode
 
