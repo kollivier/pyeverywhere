@@ -42,6 +42,14 @@ class BaseBuildController:
         """
         return os.environ
 
+    def get_source_dir(self):
+        """
+        Returns the root directory where the application's source code lives. Defaults to <project_root>/src.
+
+        :return: A string to an existing directory that contain's the application's source code.
+        """
+        return os.path.join(self.project_root, 'src')
+
     def get_dist_dir(self):
         """
         Returns the directory relative to the project build root where build outputs to be packaged are stored.

@@ -80,12 +80,12 @@ class AndroidBuildController(BaseBuildController):
     def init(self):
         self.create_distribution()
 
-    def build(self, args, settings):
-        src_dir = os.path.join(cwd, "src")
+    def build(self, settings):
+        src_dir = self.get_source_dir()
         filename = self.project_info["name"].replace(" ", "")
         build_dir = self.get_build_dir()
-        if args.config and args.config.strip() != "":
-            build_dir = os.path.join(self.get_build_dir(), args.config)
+        if self.args.config and self.args.config.strip() != "":
+            build_dir = os.path.join(self.get_build_dir(), self.args.config)
 
         ignore_paths = settings['ignore_paths']
         data_files = settings['data_files']
@@ -152,7 +152,7 @@ class AndroidBuildController(BaseBuildController):
         keypasswd = ""
 
         build_type = ""
-        if args.release:
+        if self.args.release:
             build_type = "release"
             signing = get_value_for_platform("codesign", "android")
             if signing:
@@ -182,9 +182,7 @@ class AndroidBuildController(BaseBuildController):
         if not os.path.exists(venv_dir):
             os.makedirs(venv_dir)
         if "packages" in self.project_info:
-            python = None
-            if args.platform in ["ios", "android"]:
-                python = "python2.7"
+            python = "python2.7"
             pewtools.copy_deps_to_build(self.project_info["packages"], venv_dir, build_dir, python)
         copy_pew_module(build_dir)
 

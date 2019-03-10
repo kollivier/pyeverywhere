@@ -1,10 +1,10 @@
 import json
 import os
 import shutil
+import struct
 import subprocess
 
 default_key = "default"
-info_json = {}
 pew_config = {}
 
 cwd = os.getcwd()
@@ -86,3 +86,19 @@ def copy_pew_module(build_dir):
     # just copy ours over.
     if not os.path.exists(pew_dest_dir):
         shutil.copytree(pew_src_dir, pew_dest_dir)
+
+
+def is_png(data):
+    return (data[:8] == '\211PNG\r\n\032\n'and (data[12:16] == 'IHDR'))
+
+
+def get_image_info(filename):
+    f = open(filename, 'rb')
+    data = f.read(25)
+    if is_png(data):
+        w, h = struct.unpack('>LL', data[16:24])
+        width = int(w)
+        height = int(h)
+    else:
+        raise Exception('not a png image')
+    return width, height

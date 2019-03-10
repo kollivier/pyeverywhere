@@ -6,7 +6,7 @@ all be migrated here.
 This will allow for programmatic control over builds, configuration, etc. as an alternative to using the command line.
 """
 
-from . import android, base, osx, win
+from . import android, base, ios, osx, win
 
 
 def get_build_controller(args, project_info_file):
@@ -20,6 +20,8 @@ def get_build_controller(args, project_info_file):
     impl = base.BaseBuildController
     if args.platform == 'android':
         impl = android.AndroidBuildController
+    if args.platform == 'ios':
+        impl = ios.IOSBuildController
     if args.platform == 'osx':
         impl = osx.OSXBuildController
     if args.platform == 'win':
