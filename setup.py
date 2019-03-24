@@ -13,6 +13,7 @@ setup(
     author_email='kevin@kosoftworks.com',
     license='APL',
     package_dir={'': 'src'},
+    package_data={'': ['controllers/files/*']},
     packages=find_packages('src'),
     install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj'],
     extras_require={
