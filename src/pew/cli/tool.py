@@ -38,7 +38,7 @@ config_settings = {
     "android.root": "Path to the directory where the Android tools will be stored"
 }
 
-pew_config = get_pew_config()
+pew_config = load_pew_config()
 
 android_dir = os.path.join(rootdir, "native", "android")
 
@@ -51,6 +51,12 @@ templates = [
 ]
 
 def get_default_platform():
+    """
+    For commands that require a platform to be specified, we default to the platform that the user is currently
+    running. This function determines the platform name to use by default.
+
+    :return: String platform name matching a PyEverywhere platform key.
+    """
     if sys.platform.startswith('win'):
         return 'win'
     elif sys.platform.startswith('darwin'):
@@ -110,9 +116,7 @@ def set(args):
     name = args.name
     value = args.value
     pew_config[name] = value
-    f = open(config_file, "w")
-    json.dump(pew_config, f)
-    f.close()
+    set_pew_config(pew_config)
 
 
 def create(args):

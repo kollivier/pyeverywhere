@@ -11,18 +11,39 @@ cwd = os.getcwd()
 thisdir = os.path.dirname(os.path.abspath(__file__))
 rootdir = os.path.abspath(os.path.join(thisdir, "..", "..", ".."))
 
+config_dir = os.path.expanduser(os.path.join("~", ".pyeverywhere"))
+if not os.path.exists(config_dir):
+    os.makedirs(config_dir)
 
-def get_pew_config():
+config_file = os.path.join(config_dir, "config.json")
+
+
+def load_pew_config(filename=config_file):
+    """
+    Loads the current PyEverywhre configuration settings from disk.
+    """
     global pew_config
+    if not filename:
+        filename = config_file
 
-    config_dir = os.path.expanduser(os.path.join("~", ".pyeverywhere"))
-    if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
+    if os.path.exists(filename):
+        pew_config = json.load(open(filename))
 
-    config_file = os.path.join(config_dir, "config.json")
+    return pew_config
 
-    if os.path.exists(config_file):
-        pew_config = json.load(open(config_file))
+
+def save_pew_config(filename=config_file):
+    """
+    Save the current pew configuration settings to disk.
+
+    :param filename: Path to file
+    """
+    global pew_config
+    if pew_config:
+        data = json.dumps(filename)
+        f = open(config_file, 'w')
+        f.write(data)
+        f.close()
 
 
 def set_project_info(info):
