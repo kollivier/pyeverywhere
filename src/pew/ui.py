@@ -1,5 +1,8 @@
 import logging
+import warnings
+
 import pew.options as options
+
 
 def check_platforms():
     errors = {}
@@ -107,15 +110,20 @@ class PEWApp(NativePEWApp):
     def __init__(self):
         super(PEWApp, self).__init__()
 
-    def setUp(self):
+    def init_ui(self):
         """
-        Performs application setup. Your application should override this
-        method and perform its own setup steps.
+        Called by the application when it is ready to initialize the app's UI.
 
-        It is expected that you will have a visible WebUIView before this method
+        Your subclass must implement this method and initialize a main window using `pew.ui.WebUIView`.
+
+        It is expected that you will have a visible WebUIView by the time this method
         completes. If not, some platforms may shut down the app.
         """
+
         pass
+
+    def setUp(self):
+        self.init_ui()
 
     def run(self):
         """
