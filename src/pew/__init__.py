@@ -266,7 +266,7 @@ def get_app_files_dir():
         if app_files_dir is not None and os.path.exists(app_files_dir):
             return os.path.join(app_files_dir, app_name)
         else:
-            return os.path.join(get_user_dir(), "Application Data", spp_name)
+            return os.path.join(get_user_dir(), "Application Data", app_name)
 
     # iOS and Android store documents inside their own special folders, 
     # so the directory is already app-specific

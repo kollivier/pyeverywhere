@@ -105,9 +105,12 @@ class OSXBuildController(BaseBuildController):
 
         py2app_opts = {
             "dist_dir": self.get_dist_dir(),
+            "excludes": common_options["excludes"],
+            "includes": common_options["includes"],
             'plist': plist,
             "packages": common_options["packages"],
             "site_packages": True,
+            "strip": False
         }
 
         return {'py2app': py2app_opts}

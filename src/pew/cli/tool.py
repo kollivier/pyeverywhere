@@ -116,7 +116,6 @@ def set(args):
     name = args.name
     value = args.value
     pew_config[name] = value
-    set_pew_config(pew_config)
 
 
 def create(args):
@@ -209,8 +208,6 @@ def build(args):
 
     controller = get_build_controller(args, info_file)
 
-    src_dir = os.path.join(cwd, "src")
-    build_dir = os.path.join(cwd, "build", args.platform)
     requirements = get_value_for_platform("requirements", args.platform, [])
     requirements = requirements + get_value_for_platform("requirements", "common", [])
 
