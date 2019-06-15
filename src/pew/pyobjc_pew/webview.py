@@ -9,6 +9,9 @@ import PyObjCTools.AppHelper
 import WebKit
 
 
+from . import dialogs
+
+
 PEWThread = threading.Thread
 
 
@@ -34,6 +37,11 @@ class WebViewDelegate(AppKit.NSObject):
         print("self.webview = %r" % self.webview)
         self.webview.webview_did_finish_load(self.webview)
 
+    def webView_runOpenPanelForFileButtonWithResultListener_(self, webview, listener):
+        def result(filename):
+            listener.chooseFilename_(filename)
+
+        dialogs.open_file_dialog(result)
 
 class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
