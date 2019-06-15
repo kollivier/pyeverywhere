@@ -42,13 +42,31 @@ class BaseBuildController:
         """
         return os.environ
 
+    def get_source_dir_relative(self):
+        """
+        Returns the directory relative to the project root where source files live.
+        Defaults to "src".
+        :return: A string to an existing directory where source files live.
+        """
+        source_dir = 'src'
+        if 'source_dir' in self.project_info:
+            source_dir = self.project_info['source_dir']
+        return source_dir
+
     def get_source_dir(self):
         """
         Returns the root directory where the application's source code lives. Defaults to <project_root>/src.
 
         :return: A string to an existing directory that contain's the application's source code.
         """
-        return os.path.join(self.project_root, 'src')
+        return os.path.join(self.project_root, self.get_source_dir_relative())
+
+    def get_main_script_path(self):
+        """
+        Returns the relative path to the main Python script for running the application.
+        :return: A string to a main.py Python script.
+        """
+        return os.path.join(self.get_source_dir_relative(), 'main.py')
 
     def get_dist_dir(self):
         """
@@ -102,12 +120,13 @@ class BaseBuildController:
     def get_app_data_files(self):
         asset_dirs = []
         data_files = []
+        source_dir_name = self.get_source_dir_relative()
         if "asset_dirs" in self.project_info:
             asset_dirs = self.project_info["asset_dirs"]
         else:
-            message = "WARNING: Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['src/files'] to your project_info.json file."
+            message = "WARNING: Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['{}/files'] to your project_info.json file.".format(source_dir_name)
             print(message)
-            asset_dirs = ['src/files']
+            asset_dirs = [os.path.join(source_dir_name, 'files')]
 
         for asset_dir in asset_dirs:
             for root, dirs, files in os.walk(asset_dir):
@@ -116,7 +135,7 @@ class BaseBuildController:
                     if not afile.startswith("."):
                         files_in_dir.append(os.path.join(root, afile))
                 if len(files_in_dir) > 0:
-                    data_files.append((root.replace("src/", ""), files_in_dir))
+                    data_files.append((root.replace("{}/".format(source_dir_name), ""), files_in_dir))
 
         return data_files
 
@@ -190,7 +209,7 @@ class BaseBuildController:
         dist_dir = self.get_dist_dir()
 
         # this is needed on Windows for py2exe to find scripts in the src directory
-        sys.path.append(os.path.join(self.project_root, 'src'))
+        sys.path.append(self.get_source_dir())
 
         data_files.extend(self.get_app_data_files())
         data_files.extend(self.get_platform_data_files())
@@ -219,8 +238,8 @@ class BaseBuildController:
         setup(name=name,
               version=self.project_info["version"],
               options=self.get_build_options(common_options),
-              app=['src/main.py'],
-              windows=['src/main.py'],
+              app=[self.get_main_script_path()],
+              windows=[self.get_main_script_path()],
               data_files=data_files
         )
 

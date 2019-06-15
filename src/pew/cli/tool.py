@@ -139,13 +139,15 @@ def create(args):
 
 
 def test(args):
+    controller = get_build_controller(args, info_file)
     cmd_args = ["--test"]
     if args.no_functional:
         cmd_args.append("--no-functional")
-    sys.exit(run_python_script("src/main.py", cmd_args))
+    sys.exit(run_python_script(controller.get_main_script_path(), cmd_args))
 
 
 def run(args):
+    controller = get_build_controller(args, info_file)
     copy_config_file(args)
     if args.platform == "android":
         apk_name = "%s-%s-debug.apk" % (info_json["name"].replace(" ", ""), info_json["version"])
@@ -184,7 +186,7 @@ def run(args):
             webbrowser.open(url)
         pew.start_local_server(os.path.dirname(ui_root), callback=open_browser)
     else:
-        run_python_script('src/main.py', args.args)
+        run_python_script(controller.get_main_script_path(), args.args)
 
 
 def copy_config_file(args):
