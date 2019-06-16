@@ -52,7 +52,7 @@ class NativeWebView(object):
         self.view = AppKit.NSWindow.alloc()
         frame = ((200.0, 300.0), size)
         self.view.initWithContentRect_styleMask_backing_defer_(frame, 15, 2, 0)
-        self.view.setTitle_('HelloWorld')
+        self.view.setTitle_(name)
         self.webview = WebKit.WebView.alloc().initWithFrame_(frame)
         self.webviewDelegate = WebViewDelegate.alloc().init()
         self.webviewDelegate.webview = self
