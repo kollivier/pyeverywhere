@@ -17,7 +17,8 @@ setup(
     packages=find_packages('src'),
     install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj'],
     extras_require={
-        ':platform_machine=="x86_64"': 'wxPython'
+        ':platform_machine=="x86_64"': 'wxPython',
+        ':sys_platform=="darwin"': 'dmgbuild',
     },
     # test_suite = 'your.module.tests',
     entry_points={
