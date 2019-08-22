@@ -77,7 +77,10 @@ class OSXBuildController(BaseBuildController):
             sys.exit(1)
         settings_file = self._create_dmgbuild_settings_file()
 
-        full_app_name = '{}-{}'.format(self.project_info['name'], self.project_info['version'])
+        version = self.project_info['version']
+        if 'build_number' in self.project_info:
+            version += '-build{}'.format(self.project_info['build_number'])
+        full_app_name = '{}-{}'.format(self.project_info['name'], version)
         path_name = full_app_name.replace(" ", "_").lower()
         output_path = os.path.join(self.get_package_dir(), '{}.dmg'.format(path_name))
         if os.path.exists(output_path):
@@ -103,15 +106,25 @@ class OSXBuildController(BaseBuildController):
             }
         }
 
+        if 'build_number' in self.project_info:
+            # Short version string is what the user sees when they check the version
+            plist['CFBundleShortVersionString'] = self.project_info['version']
+            # Bundle version is more internal, what we would commonly call the build number.
+            plist['CFBundleVersion'] = self.project_info['build_number']
+
         py2app_opts = {
             "dist_dir": self.get_dist_dir(),
             "excludes": common_options["excludes"],
             "includes": common_options["includes"],
             'plist': plist,
             "packages": common_options["packages"],
-            "site_packages": True,
+            "site_packages": False,
             "strip": False
         }
+
+        icons = get_value_for_platform("icons", "osx", None)
+        if icons:
+            py2app_opts['iconfile'] = icons
 
         return {'py2app': py2app_opts}
 
