@@ -26,7 +26,7 @@ class ClientHandler:
     # RequestHandler
     # --------------------------------------------------------------------------
     onload_handled = False
-    def OnBeforeBrowse(self, browser, frame, request, is_redirect):
+    def OnBeforeBrowse(self, browser, frame, request, user_gesture, is_redirect):
         # - frame.GetUrl() returns current url
         # - request.GetUrl() returns new url
         # - Return true to cancel the navigation or false to allow
