@@ -147,6 +147,12 @@ class NativeWebView(object):
     def show(self):
         pass
 
+    def close(self):
+        pass
+
+    def set_menubar(self, menubar):
+        pass
+
     def set_user_agent(self, user_agent):
         self.webview.set_user_agent(user_agent)
 

@@ -23,9 +23,6 @@ class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.view = wx.Frame(None, -1, name, size=size)
 
-        if sys.platform.startswith("darwin"):
-            self.view.SetMenuBar(self.createMacEditMenu())
-
         if useWebKitCtrl:
             self.webview = wx.webkit.WebKitCtrl(self.view, -1)
             self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
@@ -53,8 +50,14 @@ class NativeWebView(object):
     def show(self):
         self.view.Show()
 
+    def close(self):
+        self.view.Close()
+
     def set_fullscreen(self, enable=True):
         self.view.ShowFullScreen(enable)
+
+    def set_menubar(self, menubar):
+        self.view.SetMenuBar(menubar.native_object)
 
     def load_url(self, url):
         wx.CallAfter(self.webview.LoadURL, url)

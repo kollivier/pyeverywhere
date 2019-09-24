@@ -75,6 +75,9 @@ class NativeWebView(object):
     def show(self):
         self.view.present('fullscreen', hide_title_bar=True)
 
+    def close(self):
+        pass
+
     @on_main_thread
     def load_url(self, url):
         if USE_WKWEBKIT:
@@ -95,6 +98,9 @@ class NativeWebView(object):
 
     def reload(self):
         self.webview.reload()
+
+    def set_menubar(self, menubar):
+        pass
 
     def get_user_agent(self):
         return ""

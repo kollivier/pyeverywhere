@@ -66,6 +66,9 @@ class NativeWebView(object):
         self.view.contentView().setNeedsDisplay_(True)
         self.app.activateIgnoringOtherApps_(True)
 
+    def close(self):
+        self.view.close()
+
     def load_url(self, url):
         PyObjCTools.AppHelper.callAfter(self._load_url, url)
 

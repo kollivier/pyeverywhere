@@ -71,6 +71,8 @@ class NativePEWApp(wx.App):
     def run(self):
         self.MainLoop()
 
+from .menus import *
+
 try:
     from .webview_chromium import *
 except Exception as e:

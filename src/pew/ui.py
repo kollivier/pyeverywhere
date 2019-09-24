@@ -225,6 +225,12 @@ class WebUIView(NativeWebView):
         """
         super(WebUIView, self).show()
 
+    def close(self):
+        """
+        Closes the webview, on platforms which support it.
+        """
+        super(WebUIView, self).close()
+
     def set_title(self, name):
         self.webview.set_user_agent(self.webview.get_user_agent() + " / " + name)
 
@@ -278,6 +284,9 @@ class WebUIView(NativeWebView):
 
         if self.delegate and hasattr(self.delegate, "page_loaded"):
             self.delegate.page_loaded(url)
+
+        if self.delegate and hasattr(self.delegate, "url_changed"):
+            self.delegate.url_changed(url)
 
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True  # make sure we don't wait forever if the page fails to load
