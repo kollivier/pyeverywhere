@@ -20,6 +20,8 @@ chrome_settings = {
 #    "browser_subprocess_path": "%s/%s" % (
 #        cefpython.GetModuleDirectory(), "subprocess")
 }
+if MAC:
+    chrome_settings['external_message_pump'] = True
 
 class ClientHandler:
     # --------------------------------------------------------------------------
