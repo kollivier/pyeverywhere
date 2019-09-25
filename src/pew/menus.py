@@ -1,7 +1,8 @@
 
 
 class PEWMenuItemBase:
-    def __init__(self, title, handler, shortcut=None):
+    def __init__(self, title, handler=None, command=None, shortcut=None):
+        self.command = command
         self.title = title
         self.shortcut = shortcut
         self.handler = handler
@@ -14,8 +15,15 @@ class PEWMenuBase:
         self.items = []
         self.native_object = None
 
+    def add(self, title, handler=None, command=None, shortcut=None):
+        new_item = PEWMenuItemBase(title, handler, command, shortcut)
+        self.add_item(new_item)
+
     def add_item(self, menu_item):
         self.items.append(menu_item)
+
+    def add_separator(self):
+        pass
 
 
 class PEWMenuBarBase:
