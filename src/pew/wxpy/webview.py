@@ -5,15 +5,6 @@ import threading
 import wx
 import wx.html2
 
-useWebKitCtrl = False
-try:
-    import wx.webkit
-    useWebKitCtrl = True
-except Exception as e:
-    if sys.platform.startswith('darwin'):
-        logging.warning("Unable to load WebKitCtrl wrapper")
-
-
 logging.info("Initializing WebView?")
 
 PEWThread = threading.Thread
@@ -23,14 +14,9 @@ class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.view = wx.Frame(None, -1, name, size=size)
 
-        if useWebKitCtrl:
-            self.webview = wx.webkit.WebKitCtrl(self.view, -1)
-            self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
-            self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
-        else:
-            self.webview = wx.html2.WebView.New(self.view)
-            self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
-            self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
+        self.webview = wx.html2.WebView.New(self.view)
+        self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
+        self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
 
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -52,6 +38,9 @@ class NativeWebView(object):
 
     def close(self):
         self.view.Close()
+
+    def reload(self):
+        self.webview.Reload()
 
     def set_fullscreen(self, enable=True):
         self.view.ShowFullScreen(enable)
