@@ -57,6 +57,15 @@ class NativeWebView(object):
     def set_user_agent(self, user_agent):
         pass
 
+    def clear_history(self):
+        self.webview.ClearHistory()
+
+    def go_back(self):
+        self.webview.GoBack()
+
+    def go_forward(self):
+        self.webview.GoForward()
+
     def evaluate_javascript(self, js):
         js = js.encode('utf8')
         wx.CallAfter(self.webview.RunScript, js)

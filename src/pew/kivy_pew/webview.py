@@ -93,10 +93,27 @@ class AndroidWebView(object):
         self.create_webview()
         self.url = None
 
+    @run_on_ui_thread
     def load_url(self, url):
         self.url = url
         if self.initialized:
             self.webview.loadUrl(url)
+
+    @run_on_ui_thread
+    def reload(self):
+        self.webview.reload()
+
+    @run_on_ui_thread
+    def go_back(self):
+        self.webview.goBack()
+
+    @run_on_ui_thread
+    def go_forward(self):
+        self.webview.goForward()
+
+    @run_on_ui_thread
+    def clear_history(self):
+        self.webview.clearHistory()
 
     @run_on_ui_thread
     def evaluate_javascript(self, js):

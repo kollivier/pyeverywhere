@@ -69,6 +69,20 @@ class NativeWebView(object):
     def close(self):
         self.view.close()
 
+    def reload(self):
+        self.webview.reload()
+
+    def go_back(self):
+        self.webview.goBack()
+
+    def go_forward(self):
+        self.webview.goForward()
+
+    def clear_history(self):
+        # setting this to false clears the existing one.
+        self.webview.setMaintainsBackForwardList_(False)
+        self.webview.setMaintainsBackForwardList_(True)
+
     def load_url(self, url):
         PyObjCTools.AppHelper.callAfter(self._load_url, url)
 

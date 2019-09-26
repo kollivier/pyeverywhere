@@ -138,6 +138,18 @@ class NativeWebView(object):
     def set_user_agent(self, user_agent):
         pass
 
+    def reload(self):
+        self.webview.Reload()
+
+    def go_back(self):
+        self.webview.GoBack()
+
+    def go_forward(self):
+        self.webview.GoForward()
+
+    def clear_history(self):
+        pass
+
     def evaluate_javascript(self, js):
         self.webview.GetMainFrame().ExecuteJavascript(js)
 
