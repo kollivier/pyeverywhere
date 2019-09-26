@@ -1,6 +1,8 @@
 import logging
 import wx
 
+from .. import get_app_name
+
 
 def run_on_main_thread(func, *args, **kwargs):
     wx.CallAfter(func, *args, **kwargs)
@@ -62,6 +64,7 @@ class NativePEWApp(wx.App):
     def OnInit(self):
         global app
         app = self
+        self.SetAppName(get_app_name())
         self.setUp()
         return True
 
