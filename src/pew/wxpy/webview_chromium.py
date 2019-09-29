@@ -1,5 +1,6 @@
 import atexit
 import logging
+import os
 import platform
 import sys
 import threading
@@ -21,7 +22,12 @@ chrome_settings = {
 #        cefpython.GetModuleDirectory(), "subprocess")
 }
 if MAC:
+    cefpython_dir = os.path.dirname(os.path.abspath(cefpython.__file__))
+    cef_framework_dir = os.path.join(cefpython_dir, 'Chromium Embedded Framework.framework')
     chrome_settings['external_message_pump'] = True
+    chrome_settings['framework_dir_path'] = cef_framework_dir
+    chrome_settings['resources_dir_path'] = os.path.join(cef_framework_dir, 'Resources')
+    chrome_settings["browser_subprocess_path"] = os.path.join(cefpython_dir, 'subprocess')
 
 class ClientHandler:
     # --------------------------------------------------------------------------
