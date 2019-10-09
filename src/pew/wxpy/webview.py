@@ -57,6 +57,9 @@ class NativeWebView(object):
     def set_user_agent(self, user_agent):
         pass
 
+    def get_url(self):
+        return self.webview.GetCurrentURL()
+
     def clear_history(self):
         self.webview.ClearHistory()
 

@@ -110,6 +110,9 @@ class NativeWebView(object):
         self.webview.setMaintainsBackForwardList_(False)
         self.webview.setMaintainsBackForwardList_(True)
 
+    def get_url(self):
+        return self.webview.mainFrameURL()
+
     def set_menubar(self, menubar):
         pass
 

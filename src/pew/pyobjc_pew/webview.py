@@ -86,6 +86,9 @@ class NativeWebView(object):
     def load_url(self, url):
         PyObjCTools.AppHelper.callAfter(self._load_url, url)
 
+    def get_url(self):
+        return self.webview.mainFrameURL()
+
     def _load_url(self, url):
         nsurl = Foundation.NSURL.URLWithString_(url)
         req = Foundation.NSURLRequest.requestWithURL_(nsurl)

@@ -156,6 +156,9 @@ class NativeWebView(object):
     def clear_history(self):
         pass
 
+    def get_url(self):
+        return self.webview.GetUrl()
+
     def evaluate_javascript(self, js):
         self.webview.GetMainFrame().ExecuteJavascript(js)
 

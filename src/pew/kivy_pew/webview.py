@@ -116,6 +116,10 @@ class AndroidWebView(object):
         self.webview.clearHistory()
 
     @run_on_ui_thread
+    def get_url(self):
+        return self.webview.getUrl()
+
+    @run_on_ui_thread
     def evaluate_javascript(self, js):
         self.webview.loadUrl('javascript:' + js, None)
 
