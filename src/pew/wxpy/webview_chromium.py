@@ -56,6 +56,7 @@ PEWThread = threading.Thread
 
 class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
+        self.webview = None
         cefpython.Initialize(chrome_settings)
 
         self.view = wx.Frame(None, -1, name, size=size)
@@ -143,6 +144,9 @@ class NativeWebView(object):
 
     def set_user_agent(self, user_agent):
         pass
+
+    def set_menubar(self, menubar):
+        self.view.SetMenuBar(menubar.native_object)
 
     def reload(self):
         self.webview.Reload()
