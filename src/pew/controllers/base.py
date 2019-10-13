@@ -1,5 +1,7 @@
 import json
+import logging
 import os
+import shutil
 import subprocess
 import sys
 
@@ -183,6 +185,13 @@ class BaseBuildController:
         """
         pass
 
+    def get_data_files(self):
+        data_files = [('.', [os.path.join(self.project_root, "project_info.json")])]
+
+        data_files.extend(self.get_app_data_files())
+
+        return data_files
+
     def distutils_build(self):
         if self.platform == 'osx':
             import py2app
@@ -244,6 +253,35 @@ class BaseBuildController:
         )
 
         return 0
+
+    def pyinstaller_build(self):
+        # if we don't do this, PyInstaller will ask to confirm overwrite.
+        if os.path.exists(self.get_dist_dir()):
+            shutil.rmtree(self.get_dist_dir(), ignore_errors=True)
+
+        cmd = ['pyinstaller', '-D', '-n', self.project_info['name'], '--distpath', self.get_dist_dir(), '--noconsole']
+        try:
+            # cefpython has a hook file to help PyInstaller package it, so we add it here.
+            import cefpython3
+            cef_dir = os.path.dirname(cefpython3.__file__)
+            src_dir = os.path.join(os.getcwd(), 'src')
+            cef_rel_dir = os.path.relpath(cef_dir, src_dir)
+            # PyInstaller expects hook dirs to be relative to the CWD, not absolute paths.
+            cmd.append('--additional-hooks-dir={}'.format(os.path.join(cef_rel_dir, 'examples', 'pyinstaller')))
+        except:
+            logging.info("Could not find CEFPython, so not installing hook.")
+            pass
+
+        data_files = self.get_data_files()
+        for data in data_files:
+            dest = data[0]
+            files = data[1]
+            for afile in files:
+                data_str = '{}{}{}'.format(afile.replace('/', os.sep), os.pathsep, dest)
+                cmd.append('--add-data={}'.format(data_str))
+
+        cmd.append(self.get_main_script_path())
+        self.run_cmd(cmd)
 
     def run_cmd(self, cmd):
         """

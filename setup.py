@@ -15,7 +15,7 @@ setup(
     package_dir={'': 'src'},
     package_data={'': ['controllers/files/*']},
     packages=find_packages('src'),
-    install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj'],
+    install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj', 'pyinstaller'],
     extras_require={
         ':platform_machine=="x86_64"': 'wxPython',
         ':sys_platform=="darwin"': 'dmgbuild',

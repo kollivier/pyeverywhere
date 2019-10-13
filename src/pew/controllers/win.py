@@ -19,7 +19,12 @@ class WinBuildController(BaseBuildController):
         pass
 
     def get_app_path(self):
-        return os.path.join(self.get_dist_dir(), '{}{}'.format('main', self.app_ext))
+        app_path = os.path.join(self.get_dist_dir(), '{}{}'.format('main', self.app_ext))
+        if not os.path.exists(app_path):
+            name = self.project_info['name']
+            app_path =  os.path.join(self.get_dist_dir(), name, '{}{}'.format(name, self.app_ext))
+
+        return app_path
 
     def get_install_generator_path(self):
         return r'C:\Program Files (x86)\Inno Setup 5\iscc.exe'
@@ -79,9 +84,14 @@ class WinBuildController(BaseBuildController):
 
         except:  # TODO: Print the error information if verbose is set.
             pass  # if cefpython is not found, we fall back to the stock OS browser
+        return data_files
 
     def build(self, settings):
-        return self.distutils_build()
+        builder = get_value_for_platform('build_tool', 'win', 'py2exe')
+        if builder == 'pyinstaller':
+            return self.pyinstaller_build()
+        else:
+            self.distutils_build()
 
     def dist(self):
         if not os.path.exists(self.get_app_path()):
