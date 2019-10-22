@@ -89,6 +89,12 @@ class NativeWebView(object):
     def get_url(self):
         return self.webview.mainFrameURL()
 
+    def get_zoom_level(self):
+        raise NotImplementedError
+
+    def set_zoom_level(self, zoom):
+        raise NotImplementedError
+
     def _load_url(self, url):
         nsurl = Foundation.NSURL.URLWithString_(url)
         req = Foundation.NSURLRequest.requestWithURL_(nsurl)

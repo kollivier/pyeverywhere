@@ -9,6 +9,14 @@ logging.info("Initializing WebView?")
 
 PEWThread = threading.Thread
 
+zoom_levels = [
+    wx.html2.WEBVIEW_ZOOM_TINY,
+    wx.html2.WEBVIEW_ZOOM_SMALL,
+    wx.html2.WEBVIEW_ZOOM_MEDIUM,
+    wx.html2.WEBVIEW_ZOOM_LARGE,
+    wx.html2.WEBVIEW_ZOOM_LARGEST
+]
+
 
 class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
@@ -50,6 +58,12 @@ class NativeWebView(object):
 
     def load_url(self, url):
         wx.CallAfter(self.webview.LoadURL, url)
+
+    def get_zoom_level(self):
+        return zoom_levels.index(self.webview.GetZoom())
+
+    def set_zoom_level(self, zoom):
+        self.webview.SetZoom(zoom_levels[zoom])
 
     def get_user_agent(self):
         return ""

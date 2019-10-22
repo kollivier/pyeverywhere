@@ -119,6 +119,12 @@ class AndroidWebView(object):
     def get_url(self):
         return self.webview.getUrl()
 
+    def get_zoom_level(self):
+        raise NotImplementedError
+
+    def set_zoom_level(self, zoom):
+        raise NotImplementedError
+
     @run_on_ui_thread
     def evaluate_javascript(self, js):
         self.webview.loadUrl('javascript:' + js, None)
