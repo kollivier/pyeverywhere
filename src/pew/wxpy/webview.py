@@ -93,7 +93,8 @@ class NativeWebView(object):
 
     def OnBeforeLoad(self, event):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
-        return self.webview_should_start_load(self, event.URL, None)
+        if not self.webview_should_start_load(self, event.URL, None):
+            event.Veto()
 
     def OnLoadComplete(self, event):
         return self.webview_did_finish_load(self)
