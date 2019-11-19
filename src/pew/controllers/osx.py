@@ -143,8 +143,8 @@ class OSXBuildController(BaseBuildController):
             # make sure our background path can be found.
             if 'background' in di_settings:
                 bgfile = di_settings['background']
-                if not os.path.exists(bgfile):
-                    bgfile = os.path.join(self.project_root, bgfile)
+                if not os.path.isabs(bgfile):
+                    bgfile = os.path.abspath(os.path.join(self.project_root, bgfile))
                 values['background'] = bgfile
 
         settings = open(os.path.join(files_dir, 'dmgbuild_settings_template.py')).read()
