@@ -26,6 +26,9 @@ class NativeWebView(object):
         self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
         self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
 
+        self.default_zoom = self.current_zoom = 4
+        self.max_zoom = 2
+        self.min_zoom = 0.5
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def createMacEditMenu(self):
@@ -60,10 +63,13 @@ class NativeWebView(object):
         wx.CallAfter(self.webview.LoadURL, url)
 
     def get_zoom_level(self):
-        return zoom_levels.index(self.webview.GetZoom())
+        return self.current_zoom
 
     def set_zoom_level(self, zoom):
-        self.webview.SetZoom(zoom_levels[zoom])
+        if zoom / 4 < self.min_zoom or zoom / 4 > self.max_zoom:
+            return
+        self.current_zoom = zoom
+        self.evaluate_javascript('document.documentElement.style.zoom = {}'.format(zoom / 4))
 
     def get_user_agent(self):
         return ""
@@ -97,6 +103,8 @@ class NativeWebView(object):
             event.Veto()
 
     def OnLoadComplete(self, event):
+        if not self.current_zoom == self.default_zoom:
+            self.set_zoom_level(self.current_zoom)
         return self.webview_did_finish_load(self)
 
     def OnLoadStateChanged(self, event):
