@@ -134,17 +134,20 @@ class AndroidBuildController(BaseBuildController):
 
             cmd.extend(['--icon', icon])
 
-        whitelist = os.path.abspath(get_value_for_platform("whitelist_file", "android", ""))
+        whitelist = get_value_for_platform("whitelist_file", "android")
         if whitelist and os.path.exists(whitelist):
+            whitelist = os.path.abspath(whitelist)
             cmd.extend(['--whitelist', whitelist])
-        launch = os.path.abspath(get_value_for_platform("launch_images", "android", ""))
+        launch = get_value_for_platform("launch_images", "android")
         if launch and os.path.exists(launch):
+            launch = os.path.abspath(launch)
             cmd.extend(['--presplash', launch])
         orientation = get_value_for_platform("orientation", "android", "sensor")
         if orientation:
             cmd.extend(['--orientation', orientation])
-        intent_filters = os.path.abspath(get_value_for_platform("intent_filters", "android", ""))
+        intent_filters = get_value_for_platform("intent_filters", "android")
         if intent_filters and os.path.exists(intent_filters):
+            intent_filters = os.path.abspath(intent_filters)
             cmd.extend(['--intent-filters', intent_filters])
 
         keystore = ""
