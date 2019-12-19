@@ -188,7 +188,7 @@ class AndroidBuildController(BaseBuildController):
 
         shutil.rmtree(venv_dir)
 
-        return self.run_command(cmd)
+        return self.run_cmd(cmd)
 
     def get_dist_name(self):
         return "{}_dist".format(self.project_info["name"].replace(" ", ""))
