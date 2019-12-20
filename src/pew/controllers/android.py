@@ -1,4 +1,5 @@
 import getpass
+import glob
 import logging
 import os
 import shutil
@@ -191,7 +192,14 @@ class AndroidBuildController(BaseBuildController):
 
         shutil.rmtree(venv_dir)
 
-        return self.run_cmd(cmd)
+        result = self.run_cmd(cmd)
+
+        apks = glob.glob(os.path.join(cwd, '*.apk'))
+        for apk in apks:
+            dest_path = os.path.join(self.get_dist_dir(), os.path.basename(apk))
+            os.rename(apk, dest_path)
+
+        return result
 
     def get_dist_name(self):
         return "{}_dist".format(self.project_info["name"].replace(" ", ""))
