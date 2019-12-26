@@ -238,6 +238,8 @@ class BaseBuildController:
             # see https://stackoverflow.com/questions/29649440/py2exe-runtimeerror-with-tweepy
             excludes.append("six.moves.urllib.parse")
 
+        excludes.append('tkinter')
+
         common_options = {
             'packages': packages,
             "excludes": excludes,
@@ -260,14 +262,27 @@ class BaseBuildController:
             shutil.rmtree(self.get_dist_dir(), ignore_errors=True)
 
         cmd = ['pyinstaller', '-D', '-n', self.project_info['name'], '--distpath', self.get_dist_dir(), '--noconsole']
+
+        if 'packages' in self.project_info:
+            for pkg in self.project_info['packages']:
+                cmd.append('--hidden-import={}'.format(pkg))
+
+        if 'includes' in self.project_info:
+            for include in self.project_info['includes']:
+                cmd.append('--hidden-import={}'.format(include))
+
+        if 'excludes' in self.project_info:
+            for exclude in self.project_info['excludes']:
+                cmd.append('--exclude-module={}'.format(exclude))
+
         try:
             # cefpython has a hook file to help PyInstaller package it, so we add it here.
             import cefpython3
-            cef_dir = os.path.dirname(cefpython3.__file__)
-            src_dir = os.path.join(os.getcwd(), 'src')
-            cef_rel_dir = os.path.relpath(cef_dir, src_dir)
+            this_dir = os.path.dirname(os.path.abspath(__file__))
+            src_dir = os.path.join(os.getcwd())
+            this_dir_rel = os.path.relpath(this_dir, src_dir)
             # PyInstaller expects hook dirs to be relative to the CWD, not absolute paths.
-            cmd.append('--additional-hooks-dir={}'.format(os.path.join(cef_rel_dir, 'examples', 'pyinstaller')))
+            cmd.append('--additional-hooks-dir={}'.format(os.path.join(this_dir_rel, 'files', 'hooks')))
         except:
             logging.info("Could not find CEFPython, so not installing hook.")
             pass
