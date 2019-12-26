@@ -44,6 +44,32 @@ class ClientHandler:
         return False
 
 
+    def OnKeyEvent(self, browser, event, event_handle):
+        """
+        The Mac version is supposed to have handling for cut/copy/paste shortcuts, but
+        they are not functioning properly, so we add our own implementation here.
+        """
+        if MAC:
+            if event["modifiers"] == 128 and event["type"] != cefpython.KEYEVENT_RAWKEYDOWN:
+                if event["native_key_code"] in [7, 8, 9]:
+                    return True
+
+            if event["modifiers"] == 128 and event["type"] == cefpython.KEYEVENT_RAWKEYDOWN:
+                if event["native_key_code"] == 7:
+                    browser.GetFocusedFrame().Cut()
+                    return True
+
+                if event["native_key_code"] == 8:
+                    browser.GetFocusedFrame().Copy()
+                    return True
+
+                elif event["native_key_code"] == 9:
+                    browser.GetFocusedFrame().Paste()
+                    return True
+
+        return False
+
+
 @atexit.register
 def ShutDown():
     logging.info("Shutting down")

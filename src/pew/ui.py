@@ -268,6 +268,9 @@ class WebUIView(NativeWebView):
         if self.protocol is not None and self.delegate is not None and url.startswith(self.protocol):
             return not self.delegate.parse_message(url)
 
+        if self.delegate and hasattr(self.delegate, "should_load_url"):
+            return self.delegate.should_load_url(url)
+
         return True
 
     def webview_did_start_load(self, webview, url=None):
@@ -284,9 +287,6 @@ class WebUIView(NativeWebView):
 
         if self.delegate and hasattr(self.delegate, "page_loaded"):
             self.delegate.page_loaded(url)
-
-        if self.delegate and hasattr(self.delegate, "url_changed"):
-            self.delegate.url_changed(url)
 
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True  # make sure we don't wait forever if the page fails to load

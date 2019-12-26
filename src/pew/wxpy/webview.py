@@ -9,6 +9,14 @@ logging.info("Initializing WebView?")
 
 PEWThread = threading.Thread
 
+zoom_levels = [
+    wx.html2.WEBVIEW_ZOOM_TINY,
+    wx.html2.WEBVIEW_ZOOM_SMALL,
+    wx.html2.WEBVIEW_ZOOM_MEDIUM,
+    wx.html2.WEBVIEW_ZOOM_LARGE,
+    wx.html2.WEBVIEW_ZOOM_LARGEST
+]
+
 
 class NativeWebView(object):
     def __init__(self, name="WebView", size=(1024, 768)):
@@ -18,6 +26,9 @@ class NativeWebView(object):
         self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
         self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
 
+        self.default_zoom = self.current_zoom = 4
+        self.max_zoom = 2
+        self.min_zoom = 0.5
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def createMacEditMenu(self):
@@ -51,6 +62,15 @@ class NativeWebView(object):
     def load_url(self, url):
         wx.CallAfter(self.webview.LoadURL, url)
 
+    def get_zoom_level(self):
+        return self.current_zoom
+
+    def set_zoom_level(self, zoom):
+        if zoom / 4 < self.min_zoom or zoom / 4 > self.max_zoom:
+            return
+        self.current_zoom = zoom
+        self.evaluate_javascript('document.documentElement.style.zoom = {}'.format(zoom / 4))
+
     def get_user_agent(self):
         return ""
 
@@ -79,9 +99,12 @@ class NativeWebView(object):
 
     def OnBeforeLoad(self, event):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
-        return self.webview_should_start_load(self, event.URL, None)
+        if not self.webview_should_start_load(self, event.URL, None):
+            event.Veto()
 
     def OnLoadComplete(self, event):
+        if not self.current_zoom == self.default_zoom:
+            self.set_zoom_level(self.current_zoom)
         return self.webview_did_finish_load(self)
 
     def OnLoadStateChanged(self, event):

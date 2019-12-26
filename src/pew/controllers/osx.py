@@ -130,8 +130,23 @@ class OSXBuildController(BaseBuildController):
 
     def _create_dmgbuild_settings_file(self):
         values = {
-            'app_path': self.get_app_path()
+            'app_path': self.get_app_path(),
+            'background': 'builtin-arrow',
+            'window_rect': '((20, 100000), (700, 300))',
+            'app_icon_pos': '(140, 120)',
+            'apps_icon_pos': '(500, 120)',
         }
+
+        di_settings = self.project_info['disk_image'] if 'disk_image' in self.project_info else None
+        if di_settings:
+            values.update(di_settings)
+            # make sure our background path can be found.
+            if 'background' in di_settings:
+                bgfile = di_settings['background']
+                if not os.path.isabs(bgfile):
+                    bgfile = os.path.abspath(os.path.join(self.project_root, bgfile))
+                values['background'] = bgfile
+
         settings = open(os.path.join(files_dir, 'dmgbuild_settings_template.py')).read()
         # since this is a Python file, it is cleaner to just replace specific keys than to escape the special characters
         # in a Python that would trip up format or other string replacement approaches.

@@ -7,12 +7,14 @@ appname = os.path.basename(application)
 
 files = [ application ]
 
+window_rect = {window_rect}
+
 icon_locations = {
-    appname:        (140, 120),
-    'Applications': (500, 120)
+    appname:        {app_icon_pos},
+    'Applications': {apps_icon_pos},
 }
 
 # Symlinks to create
 symlinks = { 'Applications': '/Applications' }
 
-background = 'builtin-arrow'
+background = "{background}"
