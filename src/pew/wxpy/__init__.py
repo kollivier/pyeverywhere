@@ -37,7 +37,7 @@ def show_save_file_dialog(options, callback):
                 types = options['types']
                 for type_name in types:
                     wildcards.append("{}(*.{})|*.{}".format(type_name, types[type_name], types[type_name]))
-            wildcard = ';'.join(wildcards)
+            wildcard = '|'.join(wildcards)
             logging.debug("wildcard = {}".format(wildcard))
             dlg = wx.FileDialog(app.GetTopWindow(), "Save file as...", defaultFile="", wildcard = wildcard, style = wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT)
             result = dlg.ShowModal()
