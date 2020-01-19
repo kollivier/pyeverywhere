@@ -109,10 +109,13 @@ class NativeWebView(object):
                 logging.error("PyObjC needs to be installed to use Chromium on Mac.")
 
         window_info = cefpython.WindowInfo()
+        settings = {
+            'dom_paste_disabled': False
+        }
         (width, height) = self.browser_panel.GetClientSize().Get()
         window_info.SetAsChild(self.browser_panel.GetHandle(),
                                [0, 0, width, height])
-        self.webview = cefpython.CreateBrowserSync(window_info,
+        self.webview = cefpython.CreateBrowserSync(window_info, settings=settings,
                                              url="about:blank")
 
         client = ClientHandler()
