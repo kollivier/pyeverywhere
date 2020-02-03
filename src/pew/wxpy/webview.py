@@ -5,6 +5,8 @@ import threading
 import wx
 import wx.html2
 
+from ..interfaces import WebViewInterface
+
 logging.info("Initializing WebView?")
 
 PEWThread = threading.Thread
@@ -18,7 +20,7 @@ zoom_levels = [
 ]
 
 
-class NativeWebView(object):
+class NativeWebView(WebViewInterface):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.view = wx.Frame(None, -1, name, size=size)
 

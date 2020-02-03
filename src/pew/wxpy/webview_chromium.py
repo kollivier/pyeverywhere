@@ -10,6 +10,8 @@ import wx
 from cefpython3 import cefpython
 WindowUtils = cefpython.WindowUtils()
 
+from ..interfaces import WebViewInterface
+
 MAC = sys.platform.startswith('darwin')
 
 chrome_settings = {
@@ -80,7 +82,7 @@ logging.info("Initializing WebView?")
 PEWThread = threading.Thread
 
 
-class NativeWebView(object):
+class NativeWebView(WebViewInterface):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.webview = None
         cefpython.Initialize(chrome_settings)
@@ -164,6 +166,9 @@ class NativeWebView(object):
 
     def set_fullscreen(self, enable=True):
         self.view.ShowFullScreen(enable)
+
+    def set_window_title(self, title):
+        self.view.SetTitle(title)
 
     def load_url(self, url):
         self.webview.LoadUrl(url)

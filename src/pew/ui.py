@@ -232,6 +232,10 @@ class WebUIView(NativeWebView):
         super(WebUIView, self).close()
 
     def set_title(self, name):
+        try:
+            super(WebUIView, self).set_title(name)
+        except:
+            raise
         self.webview.set_user_agent(self.webview.get_user_agent() + " / " + name)
 
     def call_js_function(self, function_name, *a):
