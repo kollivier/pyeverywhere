@@ -78,10 +78,19 @@ class OSXBuildController(BaseBuildController):
         settings_file = self._create_dmgbuild_settings_file()
 
         version = self.project_info['version']
-        if 'build_number' in self.project_info:
-            version += '-build{}'.format(self.project_info['build_number'])
         full_app_name = '{}-{}'.format(self.project_info['name'], version)
         path_name = full_app_name.replace(" ", "_").lower()
+
+        if 'disk_image' in self.project_info:
+            if 'volume_name' in self.project_info['disk_image']:
+                full_app_name = self.project_info['disk_image']['volume_name']
+
+            if 'filename' in self.project_info['disk_image']:
+                path_name = self.project_info['disk_image']['filename']
+
+        if 'build_number' in self.project_info:
+            path_name += '-build{}'.format(self.project_info['build_number'])
+
         output_path = os.path.join(self.get_package_dir(), '{}.dmg'.format(path_name))
         if os.path.exists(output_path):
             os.remove(output_path)
