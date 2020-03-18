@@ -48,6 +48,16 @@ def check_platforms():
         import traceback
         errors['chromium'] = traceback.format_exc()
 
+    try:
+        import gi
+        gi.require_version('Gtk', '3.0')
+        gi.require_version('WebKit2', '4.0')
+        from gi.repository import Gtk, WebKit2
+        platforms.append('gtk')
+    except Exception as e:
+        import traceback
+        errors['gtk'] = traceback.format_exc()
+
     if len(platforms) == 0:
         message = "PyEverywhere could not load a browser for this platform."
         logging.error(message)
@@ -82,6 +92,8 @@ for platform in platforms:
             from .pyobjc_pew import *
         elif platform in ['wx', 'chromium']:
             from .wxpy import *
+        elif platform in ['gtk']:
+            from .pygobject_gtk import *
         loaded = True
         break
     except Exception as e:
