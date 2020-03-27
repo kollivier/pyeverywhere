@@ -1,13 +1,21 @@
 import logging
+import marshal
 
 import gi
 gi.require_version('Gio', '2.0')
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gio, Gtk
+from gi.repository import GLib, Gio, Gtk
 
 
 def run_on_main_thread(func, *args, **kwargs):
-    return func(*args, **kwargs)
+    def source_fn(*args, **kwargs):
+        func(*args, **kwargs)
+        return False
+
+    data = (args, kwargs)
+    main_context = GLib.MainContext.default()
+    main_context.invoke_full(GLib.PRIORITY_DEFAULT, source_fn, *args, **kwargs)
+    return None
 
 
 app = None
