@@ -3,7 +3,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-version = '0.9.3'
+version = '0.9.4'
 
 setup(
     name='pyeverywhere',
@@ -13,7 +13,7 @@ setup(
     author_email='kevin@kosoftworks.com',
     license='APL',
     package_dir={'': 'src'},
-    package_data={'': ['controllers/files/*']},
+    package_data={'': ['controllers/files/*', 'controllers/files/android/org/kosoftworks/pyeverywhere/*']},
     packages=find_packages('src'),
     install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj', 'pyinstaller'],
     extras_require={
