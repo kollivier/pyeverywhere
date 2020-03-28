@@ -15,6 +15,10 @@ import pewtools
 cwd = os.getcwd()
 default_android_root = os.path.abspath(os.path.join(os.path.expanduser("~"), ".pyeverywhere", "native", "android"))
 android_root = default_android_root
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
+files_dir = os.path.join(this_dir, 'files', 'android')
+
 if "android.root" in pew_config:
     android_root = pew_config['android.root']
 
@@ -66,12 +70,12 @@ class AndroidBuildController(BaseBuildController):
         android_env['ANT_VERSION'] = self.ant_version
         android_env['ANT_HOME'] = "{}/apache-ant-{}".format(android_root, self.ant_version)
         paths = [
+            android_env['PATH'],
             android_env['ANDROIDNDK'],
             '~/.local/bin',
             '{}/platform-tools'.format(android_env['ANDROIDSDK']),
             '{}/tools'.format(android_env['ANDROIDSDK']),
             '{}/bin'.format(android_env['ANT_HOME']),
-            android_env['PATH']
         ]
         android_env['PATH'] = ':'.join(paths)
         print("PATH = {}".format(android_env['PATH']))
@@ -93,11 +97,16 @@ class AndroidBuildController(BaseBuildController):
         requirements = settings['requirements']
 
         cmd = ['p4a', 'apk',
+                '--bootstrap', self.bootstrap,
                 '--package', self.project_info['identifier'],
                 '--name', filename,
                 '--dist_name', '{}_dist'.format(filename),
                 '--version', self.project_info["version"],
-                '--private', build_dir
+                '--private', build_dir,
+                '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
+                '--permission', 'INTERNET',
+                '--permission', 'WRITE_EXTERNAL_STORAGE',
+                '--permission', 'ACCESS_NETWORK_STATE'
         ]
 
         if len(requirements) > 0:
