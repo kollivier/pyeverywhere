@@ -17,9 +17,9 @@ setup(
     packages=find_packages('src'),
     install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj', 'pyinstaller'],
     extras_require={
-        ':sys_platform=="darwin"': ['dmgbuild'],
-        ':sys_platform=="darwin" and platform_machine=="x86_64"': ['wxPython'],
-        ':sys_platform=="linux"': ['pygobject'],
+        'osx': ['dmgbuild'],
+        'wxWidgets': ['wxPython'],
+        'gtk': ['pygobject']
     },
     # test_suite = 'your.module.tests',
     entry_points={
