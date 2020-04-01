@@ -85,27 +85,46 @@ class NativePEWApp(object):
         global app
         app = self
 
-        self.gtk_application = Gtk.Application()
-        self.gtk_application.connect('activate', self.__on_activate)
+        self.__gtk_application = Gtk.Application.new(
+            self.application_id,
+            Gio.ApplicationFlags.FLAGS_NONE
+        )
+        self.__gtk_application.connect('activate', self.__on_activate)
 
         quit_action = Gio.SimpleAction.new('quit', None)
         quit_action.connect('activate', self.__on_quit_action_activate)
-        self.gtk_application.add_action(quit_action)
-        self.gtk_application.set_accels_for_action('app.quit', ['<Primary>q'])
+        self.__gtk_application.add_action(quit_action)
+        self.__gtk_application.set_accels_for_action('app.quit', ['<Primary>q'])
 
         self.setUp()
 
+    @property
+    def gtk_application(self):
+        return self.__gtk_application
+
+    def get_top_window(self):
+        return self.__gtk_application.get_active_window()
+
     def shutdown(self):
-        self.gtk_application.quit()
+        self.__gtk_application.quit()
 
     def run(self):
-        self.gtk_application.register()
+        if not self.__gtk_application.register():
+            logging.warning("Registration failed")
+
+        if self.__gtk_application.get_is_remote():
+            self.__gtk_application.activate()
+            return
+
         if self.view:
-            self.gtk_application.add_window(self.view.window)
-        self.gtk_application.run()
+            self.__gtk_application.add_window(self.view.window)
+
+        self.__gtk_application.run()
 
     def __on_activate(self, application):
-        print("__on_activate", application)
+        active_window = self.__gtk_application.get_active_window()
+        if active_window:
+            active_window.present()
 
     def __on_quit_action_activate(self, action, parameter):
         for window in self.windows:

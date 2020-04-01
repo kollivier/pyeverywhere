@@ -119,6 +119,10 @@ class PEWApp(NativePEWApp):
     this class, initialize it and call its run method to start the app.
     """
 
+    # Unique application ID
+    # Set this to a value like "com.example.Application" in a subclass.
+    application_id = None
+
     def __init__(self):
         super(PEWApp, self).__init__()
 
