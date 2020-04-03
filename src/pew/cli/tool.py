@@ -226,7 +226,8 @@ def build(args):
     settings = {
         'requirements': requirements,
         'ignore_paths': ignore_paths,
-        'data_files': data_files
+        'data_files': data_files,
+        'extra_build_options': get_value_for_platform("extra_build_options", args.platform, {}),
     }
 
     return controller.build(settings)
