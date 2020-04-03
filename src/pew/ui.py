@@ -1,6 +1,6 @@
 import logging
-import warnings
 import six
+import warnings
 
 import pew.options as options
 
