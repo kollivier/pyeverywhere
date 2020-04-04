@@ -95,6 +95,9 @@ class AndroidBuildController(BaseBuildController):
         ignore_paths = settings['ignore_paths']
         data_files = settings['data_files']
         requirements = settings['requirements']
+        extra_build_options = settings.get('extra_build_options', {})
+        services = extra_build_options.get('services', [])
+        permissions = set(extra_build_options.get('extra_permissions', []) + ['INTERNET', 'WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
 
         cmd = ['p4a', 'apk',
                 '--bootstrap', self.bootstrap,
@@ -104,10 +107,13 @@ class AndroidBuildController(BaseBuildController):
                 '--version', self.project_info["version"],
                 '--private', build_dir,
                 '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
-                '--permission', 'INTERNET',
-                '--permission', 'WRITE_EXTERNAL_STORAGE',
-                '--permission', 'ACCESS_NETWORK_STATE'
         ]
+
+        for service in services:
+            cmd.extend(['--service', service])
+
+        for permission in permissions:
+            cmd.extend(['--permission', permission])
 
         if len(requirements) > 0:
             requirements = ",".join(requirements)
