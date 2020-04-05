@@ -49,6 +49,16 @@ def check_platforms():
         import traceback
         errors['chromium'] = traceback.format_exc()
 
+    try:
+        import gi
+        gi.require_version('Gtk', '3.0')
+        gi.require_version('WebKit2', '4.0')
+        from gi.repository import Gtk, WebKit2
+        platforms.append('gtk')
+    except Exception as e:
+        import traceback
+        errors['gtk'] = traceback.format_exc()
+
     if len(platforms) == 0:
         message = "PyEverywhere could not load a browser for this platform."
         logging.error(message)
@@ -83,6 +93,8 @@ for platform in platforms:
             from .pyobjc_pew import *
         elif platform in ['wx', 'chromium']:
             from .wxpy import *
+        elif platform in ['gtk']:
+            from .pygobject_gtk import *
         loaded = True
         break
     except Exception as e:
@@ -107,6 +119,10 @@ class PEWApp(NativePEWApp):
     Class for managing the native application. You must create a subclass of
     this class, initialize it and call its run method to start the app.
     """
+
+    # Unique application ID
+    # Set this to a value like "com.example.Application" in a subclass.
+    application_id = None
 
     def __init__(self):
         super(PEWApp, self).__init__()
