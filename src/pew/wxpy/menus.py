@@ -1,9 +1,15 @@
+import logging
 import sys
 import wx
 
 from ..menus import PEWMenuBase
 from ..menus import PEWMenuBarBase
 from ..menus import PEWMenuItemBase
+from ..menus import PEWShortcut
+
+
+def get_logger():
+    return logging.getLogger("pew[wx]")
 
 
 command_id_mapping = {
@@ -20,7 +26,18 @@ class PEWMenuItem(PEWMenuItemBase):
         super(PEWMenuItem, self).__init__(title, handler, command, shortcut)
         text = self.title
         if self.shortcut is not None:
-            text += "\t{}".format(self.shortcut)
+            shortcut = self.shortcut
+            if isinstance(shortcut, PEWShortcut):
+                native_shortcut = shortcut.key
+                if len(shortcut.modifiers) > 0:
+                    native_shortcut = "{}-{}".format('+'.join(shortcut.modifiers), shortcut.key)
+                shortcut = native_shortcut
+            else:
+                log = get_logger()
+                log.warning("Keyboard shortcut {} is not using PEWShortcut.".format(shortcut))
+                log.warning("Text shortcuts are deprecated. Please use PEWShortcut to create keyboard shortcuts.")
+                log.warning("Support for text shortcuts will be removed in v1.0")
+            text += "\t{}".format(shortcut)
         self.native_title = text
 
     def bind(self):
