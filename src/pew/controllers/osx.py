@@ -10,8 +10,14 @@ this_dir = os.path.abspath(os.path.dirname(__file__))
 files_dir = os.path.join(this_dir, 'files')
 
 
-def codesign_mac(path, identity):
+def codesign_mac(path, identity, entitlements=None):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
+
+    if not entitlements:
+        entitlements = os.path.join(files_dir, 'entitlements_default.plist')
+
+    # Use Apple's hardened runtime so that apps can be signed for newer OS versions / certs.
+    cmd.extend(["--entitlements", entitlements, "--options", "runtime"])
 
     cmd.append(path)
     logging.info("running %s" % " ".join(cmd))
@@ -50,16 +56,20 @@ class OSXBuildController(BaseBuildController):
         if "codesign" in self.project_info:
             base_path = self.get_app_path()
             print("base_path = %r" % base_path)
-            # remove the .py files and the .pyo files as we shouldn't use them
-            # running a .py file in the bundle can modify it.
-            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources", "lib", "python2.7")):
+            sign_paths = []
+
+            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources")):
                 for afile in files:
                     fullpath = os.path.join(root, afile)
-                    ext = os.path.splitext(fullpath)[1]
+                    basename, ext = os.path.splitext(fullpath)
+                    # remove the .py files and the .pyo files as we shouldn't use them
+                    # running a .py file in the bundle can modify it.
                     if ext in ['.py', '.pyo']:
-                        os.remove(fullpath)
+                        if os.path.exists(basename + '.pyc'):
+                            os.remove(fullpath)
+                    elif ext in ['.so', '.dylib', '.framework']:
+                        sign_paths.append(fullpath)
 
-            sign_paths = []
             sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
             sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
             exes = ["Python"]
