@@ -98,6 +98,7 @@ class AndroidBuildController(BaseBuildController):
         extra_build_options = settings.get('extra_build_options', {})
         services = extra_build_options.get('services', [])
         permissions = set(extra_build_options.get('extra_permissions', []) + ['INTERNET', 'WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
+        sdk = str(extra_build_options.get("sdk", ""))
 
         cmd = ['p4a', 'apk',
                 '--bootstrap', self.bootstrap,
@@ -108,6 +109,9 @@ class AndroidBuildController(BaseBuildController):
                 '--private', build_dir,
                 '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
         ]
+
+        if sdk:
+            cmd.extend(['--sdk', sdk])
 
         for service in services:
             cmd.extend(['--service', service])
