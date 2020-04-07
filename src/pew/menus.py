@@ -1,3 +1,6 @@
+import logging
+
+from .constants import KEY_MODIFIERS
 
 
 class PEWMenuItemBase:
@@ -36,6 +39,12 @@ class PEWMenuBarBase:
 
 
 class PEWShortcut:
-    def __init__(self, key, modifiers=None):
+    def __init__(self, key, modifiers=tuple()):
         self.key = key
-        self.modifiers = modifiers
+
+        if all(modifier in KEY_MODIFIERS for modifier in modifiers):
+            self.modifiers = modifiers
+        else:
+            logging.warning("Unsupported modifier in list:", modifiers)
+            self.modifiers = tuple()
+
