@@ -48,3 +48,8 @@ class PEWShortcut:
             logging.warning("Unsupported modifier in list:", modifiers)
             self.modifiers = tuple()
 
+    def __str__(self):
+        if self.modifiers:
+            return '{}-{}'.format('+'.join(self.modifiers), self.key)
+        else:
+            return self.key

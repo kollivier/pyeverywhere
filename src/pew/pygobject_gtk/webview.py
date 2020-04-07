@@ -59,6 +59,10 @@ class NativeWebView(WebViewInterface):
         return self.gtk_window
 
     @property
+    def default_zoom(self):
+        return self.default_zoom_increment
+
+    @property
     def gtk_application(self):
         return self.delegate.gtk_application
 
