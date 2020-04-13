@@ -36,10 +36,12 @@ echo 'y' | android update sdk --no-ui --all --filter platform-tool,android-$ANDR
 
 if [ ! -d android-ndk-$ANDROIDNDKVER ]
 then
-    curl -o android-ndk.bin --location http://dl.google.com/android/ndk/android-ndk-$ANDROIDNDKVER-$NDKPLATFORM-x86_64.bin
-    chmod a+x android-ndk.bin
-    ./android-ndk.bin
+    echo Downloading Android NDK to $PWD
+    curl -o android-ndk.zip --location https://dl.google.com/android/repository/android-ndk-$ANDROIDNDKVER-$NDKPLATFORM-x86_64.zip
+    unzip android-ndk.zip
 fi 
+
+echo "NDK version is $ANDROIDNDKVER"
 
 echo Downloading https://archive.apache.org/dist/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz
 

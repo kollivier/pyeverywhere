@@ -37,10 +37,10 @@ class AndroidBuildController(BaseBuildController):
     This class manages Android builds of PyEverywhere projects.
     """
 
-    default_android_sdk = "19"
-    default_android_build_tools = "23.0.3"
-    default_requirements = ["openssl","python2","pyjnius","genericndkbuild"]
-    android_ndk_version = 'r10e'
+    default_android_sdk = "29"
+    default_android_build_tools = "29.0.2"
+    default_requirements = ["openssl","python3","pyjnius","genericndkbuild"]
+    android_ndk_version = 'r21'
     ant_version = '1.9.9'
 
     platform = 'android'
@@ -97,7 +97,8 @@ class AndroidBuildController(BaseBuildController):
         requirements = settings['requirements']
         extra_build_options = settings.get('extra_build_options', {})
         services = extra_build_options.get('services', [])
-        permissions = set(extra_build_options.get('extra_permissions', []) + ['INTERNET', 'WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
+        permissions = set(extra_build_options.get('extra_permissions', []) + ['WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
+        minsdk = str(extra_build_options.get("minsdk", ""))
         sdk = str(extra_build_options.get("sdk", ""))
 
         cmd = ['p4a', 'apk',
@@ -110,8 +111,11 @@ class AndroidBuildController(BaseBuildController):
                 '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
         ]
 
+        if minsdk:
+            cmd.extend(['--minsdk', minsdk])
+
         if sdk:
-            cmd.extend(['--sdk', sdk])
+            cmd.extend(['--android-api', sdk])
 
         for service in services:
             cmd.extend(['--service', service])

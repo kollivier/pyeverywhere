@@ -184,12 +184,12 @@ class RESTClient(object):
             data = response.read()
             if 'content-encoding' in resp_headers:
                 if resp_headers['content-encoding'] == 'gzip':
-                    print "Decompressing gzip content"
+                    logging.debug("Decompressing gzip content")
                     compresseddata = StringIO.StringIO(data)
                     gzipper = gzip.GzipFile(fileobj=compresseddata)
                     data = gzipper.read()
                 else:
-                    print "Content-Encoding = %s" % resp_headers['Content-Encoding']
+                    logging.debug("Content-Encoding = %s" % resp_headers['Content-Encoding'])
             else:
                 logging.debug("Response headers are: %r" % resp_headers)
 
@@ -212,17 +212,17 @@ class RESTClient(object):
             elapsed = time.time() - start
             logging.info("Call %s took %r seconds" % (api, elapsed))
             return data
-        except httplib.BadStatusLine, e:
+        except httplib.BadStatusLine as e:
             logging.error("Got bad status line on line %s" % e.line)
             return {}
         except socket.timeout:
             raise ServerConnectionError("Server connection attempt timed out.")
-        except AuthorizationError, e:
+        except AuthorizationError as e:
             # if we have a token, it is probably invalid, so we should try a full sign in.
             if "token" in cache_data:
                 self.invalidate_token()
                 return self.call_api(api, data, method, last_checked, filter, data_type)
-        except Exception, e:
+        except Exception as e:
             if hasattr(e, "errno") and e.errno == 61:
                 raise ServerConnectionError("Connection to server refused.")
             else:

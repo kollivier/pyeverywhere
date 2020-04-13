@@ -11,7 +11,7 @@ if [[ "$unamestr" == "Darwin" ]]; then
 fi
 
 export ANDROIDSDK="${ANDROID_ROOT}/android-sdk-$PLATFORM"
-export ANDROIDNDKVER=r10e
+export ANDROIDNDKVER=r21
 export ANDROIDNDK="${ANDROID_ROOT}/android-ndk-$ANDROIDNDKVER"
 
 export ANT_HOME="${ANDROID_ROOT}/apache-ant-$ANT_VERSION"

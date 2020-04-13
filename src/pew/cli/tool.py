@@ -150,8 +150,7 @@ def run(args):
     controller = get_build_controller(args, info_file)
     copy_config_file(args)
     if args.platform == "android":
-        apk_name = "%s-%s-debug.apk" % (info_json["name"].replace(" ", ""), info_json["version"])
-        apk_file = os.path.join(cwd, "dist", "android", apk_name)
+        apk_file = glob.glob("dist/android/*.apk")[0]
         if not os.path.exists(apk_file):
             print("Could not find APK file to run at %s" % apk_file)
             print("Please ensure that you have performed a build and that it succeeded, and try again.")
