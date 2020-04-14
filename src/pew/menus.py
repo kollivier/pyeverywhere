@@ -33,3 +33,9 @@ class PEWMenuBarBase:
 
     def add_menu(self, menu):
         self.menus.append(menu)
+
+
+class PEWShortcut:
+    def __init__(self, key, modifiers=None):
+        self.key = key
+        self.modifiers = modifiers
