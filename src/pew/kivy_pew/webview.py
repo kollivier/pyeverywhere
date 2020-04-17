@@ -7,7 +7,7 @@ import jnius
 logging.info("Starting pew_p4a...?")
 
 from jnius import autoclass, JavaClass, PythonJavaClass, MetaJavaClass, java_method, JavaMethod
-from runnable import run_on_ui_thread
+from .runnable import run_on_ui_thread
 
 WebView = autoclass('android.webkit.WebView')
 WebViewClient = autoclass('android.webkit.WebViewClient')

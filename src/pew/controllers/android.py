@@ -126,7 +126,7 @@ class AndroidBuildController(BaseBuildController):
         if len(requirements) > 0:
             requirements = ",".join(requirements)
         else:
-            requirements = "python2,pyjnius,genericndkbuild"
+            requirements = ",".join(self.default_requirements)
         cmd.extend(['--requirements', requirements])
 
         has_build_version_num = False
