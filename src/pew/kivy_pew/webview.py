@@ -165,8 +165,9 @@ class NativeWebView(object):
 
     def get_persisted_state(self):
         state = {}
-        if PythonActivity.mSavedURL:
-            state['URL'] = PythonActivity.mSavedURL
+        # Temporarily disable until we finish updates to p4a webview bootstrap
+        # if PythonActivity.mSavedURL:
+        #     state['URL'] = PythonActivity.mSavedURL
 
         return state
 
