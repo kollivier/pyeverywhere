@@ -99,6 +99,7 @@ class AndroidBuildController(BaseBuildController):
         services = extra_build_options.get('services', [])
         permissions = set(extra_build_options.get('extra_permissions', []) + ['WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
         minsdk = str(extra_build_options.get("minsdk", ""))
+        fileprovider_paths_filename = extra_build_options.get('fileprovider_paths_filename')
         sdk = str(extra_build_options.get("sdk", ""))
 
         cmd = ['p4a', 'apk',
@@ -113,12 +114,16 @@ class AndroidBuildController(BaseBuildController):
 
         if minsdk:
             cmd.extend(['--minsdk', minsdk])
+            cmd.extend(['--ndk-api', minsdk])
 
         if sdk:
             cmd.extend(['--android-api', sdk])
 
         for service in services:
             cmd.extend(['--service', service])
+
+        if fileprovider_paths_filename:
+            cmd.extend(['--fileprovider-paths', os.path.join(src_dir, fileprovider_paths_filename)])
 
         for permission in permissions:
             cmd.extend(['--permission', permission])
