@@ -89,14 +89,15 @@ class NativePEWApp(object):
             self.application_id,
             Gio.ApplicationFlags.FLAGS_NONE
         )
+        self.__gtk_application.connect('startup', self.__on_startup)
         self.__gtk_application.connect('activate', self.__on_activate)
 
         quit_action = Gio.SimpleAction.new('quit', None)
         quit_action.connect('activate', self.__on_quit_action_activate)
         self.__gtk_application.add_action(quit_action)
         self.__gtk_application.set_accels_for_action('app.quit', ['<Primary>q'])
-
-        self.setUp()
+        
+        self.view = None
 
     @property
     def gtk_application(self):
@@ -116,10 +117,11 @@ class NativePEWApp(object):
             self.__gtk_application.activate()
             return
 
-        if self.view:
-            self.__gtk_application.add_window(self.view.window)
-
         self.__gtk_application.run()
+
+    def __on_startup(self, application):
+        if not self.__gtk_application.get_is_remote():
+            self.setUp()
 
     def __on_activate(self, application):
         active_window = self.__gtk_application.get_active_window()
