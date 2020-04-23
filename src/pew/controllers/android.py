@@ -103,6 +103,7 @@ class AndroidBuildController(BaseBuildController):
         sdk = str(extra_build_options.get("sdk", ""))
 
         cmd = ['p4a', 'apk',
+                '--window',
                 '--bootstrap', self.bootstrap,
                 '--package', self.project_info['identifier'],
                 '--name', filename,
