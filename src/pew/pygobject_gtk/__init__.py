@@ -24,7 +24,7 @@ def run_on_main_thread(func, *args, **kwargs):
 
 def choose_file(callback):
     if app:
-        top_window = app.get_top_window()
+        top_window = app._gtk_get_top_window()
     else:
         top_window = None
 
@@ -46,7 +46,7 @@ def choose_file(callback):
 
 def show_save_file_dialog(options, callback):
     if app:
-        top_window = app.get_top_window()
+        top_window = app._gtk_get_top_window()
     else:
         top_window = None
 
@@ -86,33 +86,42 @@ class NativePEWApp(object):
         global app
         app = self
 
+        application_flags = Gio.ApplicationFlags.HANDLES_COMMAND_LINE
+        if self.handles_open_file_uris:
+            application_flags |= Gio.ApplicationFlags.HANDLES_OPEN
+
         self.__gtk_application = Gtk.Application.new(
             self.application_id,
-            Gio.ApplicationFlags.FLAGS_NONE
+            application_flags
         )
+        self.__gtk_application.set_inactivity_timeout(1000)
         self.__gtk_application.connect('startup', self.__on_startup)
         self.__gtk_application.connect('activate', self.__on_activate)
+        self.__gtk_application.connect('command-line', self.__on_command_line)
+        self.__gtk_application.connect('open', self.__on_open)
         self.__gtk_application.connect('shutdown', self.__on_shutdown)
 
         quit_action = Gio.SimpleAction.new('quit', None)
         quit_action.connect('activate', self.__on_quit_action_activate)
         self.__gtk_application.add_action(quit_action)
         self.__gtk_application.set_accels_for_action('app.quit', ['<Primary>q'])
-        
+
         self.view = None
+
+    def run(self):
+        self.__gtk_application.run(sys.argv)
+
+    def shutdown(self):
+        # No-op. GTK main loop will shut itself down and call this function.
+        # This can be overrided to add additional cleanups.
+        pass
 
     @property
     def gtk_application(self):
         return self.__gtk_application
 
-    def get_top_window(self):
+    def _gtk_get_top_window(self):
         return self.__gtk_application.get_active_window()
-
-    def shutdown(self):
-        pass
-
-    def run(self):
-        self.__gtk_application.run(sys.argv)
 
     def __on_startup(self, application):
         pass
@@ -121,6 +130,32 @@ class NativePEWApp(object):
         active_window = self.__gtk_application.get_active_window()
         if active_window:
             active_window.present()
+
+    def __on_command_line(self, application, command_line):
+        # Run self.init_ui after processing local command line. This allows
+        # applications to exit cleanly (before init_ui has been run) in
+        # response to command line arguments.
+
+        try:
+            argv = command_line.get_arguments()[1:]
+            self.handle_command_line(argv)
+        except SystemExit as exit:
+            return exit.code
+        except Exception as error:
+            logging.warning("Error handling command line", error)
+            return 1
+
+        if not command_line.get_is_remote():
+            self.init_ui()
+
+        return 0
+
+    def __on_open(self, application, files, n_files, hint):
+        file_uris = [f.get_uri() for f in files]
+        self.handle_open_file_uris(file_uris)
+
+    def __on_shutdown(self, application):
+        self.shutdown()
 
     def __on_quit_action_activate(self, action, parameter):
         for window in self.__gtk_application.get_windows():
