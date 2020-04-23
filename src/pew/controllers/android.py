@@ -102,6 +102,10 @@ class AndroidBuildController(BaseBuildController):
         fileprovider_paths_filename = extra_build_options.get('fileprovider_paths_filename')
         sdk = str(extra_build_options.get("sdk", ""))
 
+        arch = 'armeabi-v7a'
+        if '64bit' in self.args.extra_args:
+            arch = 'arm64-v8a'
+
         cmd = ['p4a', 'apk',
                 '--window',
                 '--bootstrap', self.bootstrap,
@@ -110,6 +114,7 @@ class AndroidBuildController(BaseBuildController):
                 '--dist_name', '{}_dist'.format(filename),
                 '--version', self.project_info["version"],
                 '--private', build_dir,
+                '--arch', arch,
                 '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
         ]
 
