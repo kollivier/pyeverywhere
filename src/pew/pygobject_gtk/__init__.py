@@ -1,5 +1,6 @@
 import logging
 import marshal
+import sys
 
 import gi
 gi.require_version('Gio', '2.0')
@@ -91,6 +92,7 @@ class NativePEWApp(object):
         )
         self.__gtk_application.connect('startup', self.__on_startup)
         self.__gtk_application.connect('activate', self.__on_activate)
+        self.__gtk_application.connect('shutdown', self.__on_shutdown)
 
         quit_action = Gio.SimpleAction.new('quit', None)
         quit_action.connect('activate', self.__on_quit_action_activate)
@@ -107,21 +109,13 @@ class NativePEWApp(object):
         return self.__gtk_application.get_active_window()
 
     def shutdown(self):
-        self.__gtk_application.quit()
+        pass
 
     def run(self):
-        if not self.__gtk_application.register():
-            logging.warning("Registration failed")
-
-        if self.__gtk_application.get_is_remote():
-            self.__gtk_application.activate()
-            return
-
-        self.__gtk_application.run()
+        self.__gtk_application.run(sys.argv)
 
     def __on_startup(self, application):
-        if not self.__gtk_application.get_is_remote():
-            self.setUp()
+        pass
 
     def __on_activate(self, application):
         active_window = self.__gtk_application.get_active_window()
@@ -129,7 +123,7 @@ class NativePEWApp(object):
             active_window.present()
 
     def __on_quit_action_activate(self, action, parameter):
-        for window in self.windows:
+        for window in self.__gtk_application.get_windows():
             window.close()
 
 from .menus import *
