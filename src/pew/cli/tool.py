@@ -282,11 +282,12 @@ def main():
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
     new_opt.add_argument('name', help='Name of project to create')
     new_opt.add_argument('--template', default='default', help='Specify a project template for the app. Choices are: %r' % (templates,))
-
+    new_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
     new_opt.set_defaults(func=create)
 
     up_opt = commands.add_parser('init', help="Initialize the PyEverywhere dependencies for the project in the current working directory.")
     up_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
     up_opt.set_defaults(func=init)
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")

@@ -39,6 +39,7 @@ class AndroidBuildController(BaseBuildController):
 
     default_android_sdk = "29"
     default_android_build_tools = "29.0.2"
+    default_arch = 'armeabi-v7a'
     default_requirements = ["openssl","python3","pyjnius","genericndkbuild"]
     android_ndk_version = 'r21'
     ant_version = '1.9.9'
@@ -102,10 +103,6 @@ class AndroidBuildController(BaseBuildController):
         fileprovider_paths_filename = extra_build_options.get('fileprovider_paths_filename')
         sdk = str(extra_build_options.get("sdk", ""))
 
-        arch = 'armeabi-v7a'
-        if '64bit' in self.args.extra_args:
-            arch = 'arm64-v8a'
-
         cmd = ['p4a', 'apk',
                 '--window',
                 '--bootstrap', self.bootstrap,
@@ -114,7 +111,7 @@ class AndroidBuildController(BaseBuildController):
                 '--dist_name', '{}_dist'.format(filename),
                 '--version', self.project_info["version"],
                 '--private', build_dir,
-                '--arch', arch,
+                '--arch', self.get_arch(),
                 '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
         ]
 
@@ -235,8 +232,14 @@ class AndroidBuildController(BaseBuildController):
 
         return result
 
+    def get_arch(self):
+        arch = self.default_arch
+        if '64bit' in self.args.extra_args:
+            arch = 'arm64-v8a'
+        return arch
+
     def get_dist_name(self):
-        return "{}_dist".format(self.project_info["name"].replace(" ", ""))
+        return "{}_dist__{}".format(self.project_info["name"].replace(" ", ""), self.get_arch())
 
     def get_python_dist_folder(self):
         return os.path.expanduser('~/.python-for-android/dists/{}'.format(self.get_dist_name()))
@@ -249,7 +252,7 @@ class AndroidBuildController(BaseBuildController):
         cmd = [
             'p4a',
             'create',
-            '--dist_name', self.get_dist_name(),
+            '--arch', self.get_arch(),
             '--bootstrap', self.bootstrap,
 
         ]
