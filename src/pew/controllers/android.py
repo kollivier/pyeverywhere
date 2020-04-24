@@ -108,7 +108,7 @@ class AndroidBuildController(BaseBuildController):
                 '--bootstrap', self.bootstrap,
                 '--package', self.project_info['identifier'],
                 '--name', filename,
-                '--dist_name', '{}_dist'.format(filename),
+                '--dist_name', self.get_dist_name(),
                 '--version', self.project_info["version"],
                 '--private', build_dir,
                 '--arch', self.get_arch(),
@@ -239,7 +239,7 @@ class AndroidBuildController(BaseBuildController):
         return arch
 
     def get_dist_name(self):
-        return "{}_dist__{}".format(self.project_info["name"].replace(" ", ""), self.get_arch())
+        return "{}_dist".format(self.project_info["name"].replace(" ", ""))
 
     def get_python_dist_folder(self):
         return os.path.expanduser('~/.python-for-android/dists/{}'.format(self.get_dist_name()))
@@ -253,6 +253,7 @@ class AndroidBuildController(BaseBuildController):
             'p4a',
             'create',
             '--arch', self.get_arch(),
+            '--dist_name', self.get_dist_name(),
             '--bootstrap', self.bootstrap,
 
         ]
