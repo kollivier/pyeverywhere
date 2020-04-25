@@ -69,7 +69,6 @@ def run_command(cmd):
     global command_env
     if verbose:
         print("Running command: %r" % cmd)
-        print("Environment: %r" % (command_env,))
     return subprocess.call(cmd, env=command_env)
 
 

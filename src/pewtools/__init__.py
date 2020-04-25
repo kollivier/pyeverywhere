@@ -119,7 +119,6 @@ def initialize_platform(platform_name, command_env, verbose=False):
 
             if verbose:
                 print("Running command %r" % final_cmd)
-                print("Environment: %s" % (command_env,))
             subprocess.check_call(final_cmd, env=command_env)
 
 
