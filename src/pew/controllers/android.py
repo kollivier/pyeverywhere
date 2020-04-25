@@ -182,26 +182,11 @@ class AndroidBuildController(BaseBuildController):
             intent_filters = os.path.abspath(intent_filters)
             cmd.extend(['--intent-filters', intent_filters])
 
-        keystore = ""
-        keyalias = ""
-        keypasswd = ""
-
-        build_type = ""
         if self.args.release:
-            build_type = "release"
-            signing = get_value_for_platform("codesign", "android")
-            if signing:
-                keystore = os.path.abspath(signing['keystore'])
-                keyalias = signing['alias']
-                if 'passwd' in signing:
-                    keypasswd = signing['passwd']
-                else:
-                    keypasswd = getpass.getpass()
-
-                cmd.extend(['--keystore', keystore, '--signkey', keyalias, '--keystorepw', keypasswd])
-
-        if build_type == "release":
             cmd.append('--release')
+
+            if 'P4A_RELEASE_KEYSTORE' in self.get_env():
+                cmd.append('--sign')
 
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
