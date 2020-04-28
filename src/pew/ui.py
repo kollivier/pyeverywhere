@@ -249,6 +249,12 @@ class WebUIView(NativeWebView):
         self.current_url = url
         super(WebUIView, self).load_url(url)
 
+    def present_window(self):
+        """
+        Ask the desktop environment to bring this window to the user's attention.
+        """
+        super(WebUIView, self).present_window()
+
     def get_view_state(self):
         """
         Get any view or app state that was natively persisted by pause / resume actions.

@@ -6,9 +6,10 @@ from enum import Enum
 from ..interfaces import WebViewInterface
 
 import gi
+gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
-from gi.repository import Gtk, WebKit2
+from gi.repository import Gdk, Gtk, WebKit2
 
 
 PEWThread = threading.Thread
@@ -110,6 +111,10 @@ class NativeWebView(WebViewInterface):
 
     def load_url(self, url):
         self.__gtk_webview.load_uri(url)
+
+    def present_window(self):
+        if self.__gtk_window:
+            self.__gtk_window.present_with_time(Gdk.CURRENT_TIME)
 
     def get_zoom_level(self):
         # Public interface actually speaks in zoom increments, not webkit's

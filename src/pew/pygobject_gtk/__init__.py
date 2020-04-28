@@ -24,7 +24,7 @@ def run_on_main_thread(func, *args, **kwargs):
 
 def choose_file(callback):
     if app:
-        top_window = app._gtk_get_top_window()
+        top_window = app.gtk_get_top_window()
     else:
         top_window = None
 
@@ -46,7 +46,7 @@ def choose_file(callback):
 
 def show_save_file_dialog(options, callback):
     if app:
-        top_window = app._gtk_get_top_window()
+        top_window = app.gtk_get_top_window()
     else:
         top_window = None
 
@@ -120,7 +120,7 @@ class NativePEWApp(object):
     def gtk_application(self):
         return self.__gtk_application
 
-    def _gtk_get_top_window(self):
+    def gtk_get_top_window(self):
         return self.__gtk_application.get_active_window()
 
     def __on_startup(self, application):
