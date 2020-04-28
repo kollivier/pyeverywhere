@@ -74,6 +74,7 @@ class NativeWebView(WebViewInterface):
             return self.__gtk_window
 
         gtk_window = Gtk.ApplicationWindow(application=self.gtk_application)
+        gtk_window.connect('destroy', self.__gtk_window_on_destroy)
         gtk_window.set_titlebar(self.__gtk_header_bar)
         gtk_window.set_default_size(self.__size_width, self.__size_height)
         gtk_window.add(self.__gtk_webview)
@@ -146,6 +147,9 @@ class NativeWebView(WebViewInterface):
 
     def evaluate_javascript(self, js):
         self.__gtk_webview.run_javascript(js)
+
+    def __gtk_window_on_destroy(self, window):
+        self.shutdown()
 
     def __gtk_webview_on_decide_policy(self, webview, decision, decision_type):
         if decision_type == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
