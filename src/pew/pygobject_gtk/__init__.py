@@ -94,7 +94,6 @@ class NativePEWApp(object):
             self.application_id,
             application_flags
         )
-        self.__gtk_application.set_inactivity_timeout(1000)
         self.__gtk_application.connect('startup', self.__on_startup)
         self.__gtk_application.connect('activate', self.__on_activate)
         self.__gtk_application.connect('command-line', self.__on_command_line)
@@ -123,13 +122,17 @@ class NativePEWApp(object):
     def gtk_get_top_window(self):
         return self.__gtk_application.get_active_window()
 
+    def __gtk_present_top_window(self):
+        active_window = self.gtk_get_top_window()
+        if active_window:
+            active_window.present()
+
     def __on_startup(self, application):
         pass
 
     def __on_activate(self, application):
-        active_window = self.__gtk_application.get_active_window()
-        if active_window:
-            active_window.present()
+        self.init_ui()
+        self.__gtk_present_top_window()
 
     def __on_command_line(self, application, command_line):
         # Run self.init_ui after processing local command line. This allows
@@ -145,8 +148,7 @@ class NativePEWApp(object):
             logging.warning("Error handling command line", error)
             return 1
 
-        if not command_line.get_is_remote():
-            self.init_ui()
+        application.activate()
 
         return 0
 
