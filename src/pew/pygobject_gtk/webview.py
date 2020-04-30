@@ -6,9 +6,10 @@ from enum import Enum
 from ..interfaces import WebViewInterface
 
 import gi
+gi.require_version('Gdk', '3.0')
 gi.require_version('Gtk', '3.0')
 gi.require_version('WebKit2', '4.0')
-from gi.repository import Gtk, WebKit2
+from gi.repository import Gdk, Gtk, WebKit2
 
 
 PEWThread = threading.Thread
@@ -74,6 +75,7 @@ class NativeWebView(WebViewInterface):
             return self.__gtk_window
 
         gtk_window = Gtk.ApplicationWindow(application=self.gtk_application)
+        gtk_window.connect('destroy', self.__gtk_window_on_destroy)
         gtk_window.set_titlebar(self.__gtk_header_bar)
         gtk_window.set_default_size(self.__size_width, self.__size_height)
         gtk_window.add(self.__gtk_webview)
@@ -109,6 +111,10 @@ class NativeWebView(WebViewInterface):
 
     def load_url(self, url):
         self.__gtk_webview.load_uri(url)
+
+    def present_window(self):
+        if self.__gtk_window:
+            self.__gtk_window.present_with_time(Gdk.CURRENT_TIME)
 
     def get_zoom_level(self):
         # Public interface actually speaks in zoom increments, not webkit's
@@ -146,6 +152,9 @@ class NativeWebView(WebViewInterface):
 
     def evaluate_javascript(self, js):
         self.__gtk_webview.run_javascript(js)
+
+    def __gtk_window_on_destroy(self, window):
+        self.shutdown()
 
     def __gtk_webview_on_decide_policy(self, webview, decision, decision_type):
         if decision_type == WebKit2.PolicyDecisionType.NAVIGATION_ACTION:
