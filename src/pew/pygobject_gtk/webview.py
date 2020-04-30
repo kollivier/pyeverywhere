@@ -113,7 +113,7 @@ class NativeWebView(WebViewInterface):
         self.__gtk_webview.load_uri(url)
 
     def present_window(self):
-        if self.__gtk_window:
+        if self.__gtk_window and self.__gtk_window.get_realized():
             self.__gtk_window.present_with_time(Gdk.CURRENT_TIME)
 
     def get_zoom_level(self):
