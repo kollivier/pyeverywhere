@@ -1,11 +1,13 @@
 import logging
 import marshal
+import os
 import sys
 
 import gi
 gi.require_version('Gio', '2.0')
 gi.require_version('Gtk', '3.0')
-from gi.repository import GLib, Gio, Gtk
+gi.require_version('WebKit2', '4.0')
+from gi.repository import GLib, Gio, Gtk, WebKit2
 
 
 app = None
@@ -105,7 +107,7 @@ class NativePEWApp(object):
         self.__gtk_application.add_action(quit_action)
         self.__gtk_application.set_accels_for_action('app.quit', ['<Primary>q'])
 
-        self.view = None
+        self.__webkit_web_context = None
 
     def run(self):
         self.__gtk_application.run(sys.argv)
@@ -116,8 +118,39 @@ class NativePEWApp(object):
         pass
 
     @property
+    def user_data_directory(self):
+        base_dir = GLib.get_user_data_dir()
+        application_id = getattr(self, 'application_id')
+        if application_id:
+            return os.path.join(base_dir, application_id)
+        else:
+            return None
+
+    @property
     def gtk_application(self):
         return self.__gtk_application
+
+    @property
+    def webkit_web_context(self):
+        if self.__webkit_web_context:
+            return self.__webkit_web_context
+
+        if self.user_data_directory:
+            website_data_manager = WebKit2.WebsiteDataManager(base_data_directory=self.user_data_directory)
+        else:
+            website_data_manager = None
+
+        webkit_web_context = WebKit2.WebContext(website_data_manager=website_data_manager)
+
+        if self.user_data_directory:
+            cookies_filename = os.path.join(self.user_data_directory, 'cookies.sqlite')
+            cookie_manager = webkit_web_context.get_cookie_manager()
+            cookie_manager.set_accept_policy(WebKit2.CookieAcceptPolicy.NO_THIRD_PARTY)
+            cookie_manager.set_persistent_storage(cookies_filename, WebKit2.CookiePersistentStorage.SQLITE)
+
+        self.__webkit_web_context = webkit_web_context
+
+        return webkit_web_context
 
     def gtk_get_top_window(self):
         return self.__gtk_application.get_active_window()
