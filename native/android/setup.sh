@@ -1,10 +1,5 @@
 #!/bin/bash
 
-ROOT_DIR="$PWD/native/android"
-
-echo "$ROOT_DIR/setup.sh"
-. $ROOT_DIR/setup.sh
-
 export ANT_VERSION="1.9.9"
 
 PLATFORM='linux'

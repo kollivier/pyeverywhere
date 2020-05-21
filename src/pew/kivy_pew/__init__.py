@@ -50,4 +50,5 @@ class NativePEWApp(object):
         pass
 
 
+from .menus import *
 from .webview import *

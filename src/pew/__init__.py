@@ -25,7 +25,6 @@ import six
 from six.moves.BaseHTTPServer import BaseHTTPRequestHandler
 from six.moves.urllib.parse import urlparse, unquote
 
-platform = None
 app_name = "python"
 
 
@@ -238,9 +237,15 @@ def get_user_path(app_name="python"):
     """
     Returns the folder where user data can be stored.
     """
-    global platform
     root = get_user_dir()
-    if platform != "ios":
+    ios = False
+    try:
+        import console
+        import ui
+        ios = True
+    except:
+        pass
+    if not ios:
         return os.path.join(root, ".%s" % app_name.replace(" ", "_").lower())
     else:
         # iOS does not seems to allow for sub-folder creation?
@@ -252,17 +257,16 @@ def get_app_files_dir():
     """
     Returns the location where the application's support files should be stored.
     """
-    global platform
     global app_name
 
-    if platform == "mac":
+    if sys.platform.startswith("darwin"):
         return os.path.join(get_user_dir(), "Library", "Application Support", app_name)
-    elif platform == "win":
+    elif sys.platform.startswith("win"):
         app_files_dir = os.getenv('APPDATA')
         if app_files_dir is not None and os.path.exists(app_files_dir):
-            return app_files_dir
+            return os.path.join(app_files_dir, app_name)
         else:
-            return os.path.join(get_user_dir(), "Application Data")
+            return os.path.join(get_user_dir(), "Application Data", app_name)
 
     # iOS and Android store documents inside their own special folders, 
     # so the directory is already app-specific

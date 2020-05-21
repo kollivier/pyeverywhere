@@ -1,5 +1,9 @@
 import logging
+import six
+import warnings
+
 import pew.options as options
+
 
 def check_platforms():
     errors = {}
@@ -45,6 +49,16 @@ def check_platforms():
         import traceback
         errors['chromium'] = traceback.format_exc()
 
+    try:
+        import gi
+        gi.require_version('Gtk', '3.0')
+        gi.require_version('WebKit2', '4.0')
+        from gi.repository import Gtk, WebKit2
+        platforms.append('gtk')
+    except Exception as e:
+        import traceback
+        errors['gtk'] = traceback.format_exc()
+
     if len(platforms) == 0:
         message = "PyEverywhere could not load a browser for this platform."
         logging.error(message)
@@ -79,6 +93,8 @@ for platform in platforms:
             from .pyobjc_pew import *
         elif platform in ['wx', 'chromium']:
             from .wxpy import *
+        elif platform in ['gtk']:
+            from .pygobject_gtk import *
         loaded = True
         break
     except Exception as e:
@@ -104,18 +120,53 @@ class PEWApp(NativePEWApp):
     this class, initialize it and call its run method to start the app.
     """
 
+    # Unique application ID
+    # Set this to a value like "com.example.Application" in a subclass.
+    application_id = None
+
+    # Set to true if this application will accept file open requests from the
+    # system.
+    handles_open_file_uris = False
+
     def __init__(self):
         super(PEWApp, self).__init__()
 
-    def setUp(self):
+    def init_ui(self):
         """
-        Performs application setup. Your application should override this
-        method and perform its own setup steps.
+        Called by the application when it is ready to initialize the app's UI.
 
-        It is expected that you will have a visible WebUIView before this method
+        Your subclass must implement this method and initialize a main window using `pew.ui.WebUIView`.
+
+        It is expected that you will have a visible WebUIView by the time this method
         completes. If not, some platforms may shut down the app.
         """
+
         pass
+
+    def handle_command_line(self, argv):
+        """
+        Implement command line processing for the application here.
+
+        On some platforms, additional command line arguments may be passed to
+        the application after it starts. This function runs before init_ui.
+        Raising an Exception or SystemExit, such as with argparse, causes the
+        application to exit early.
+        """
+
+        pass
+
+    def handle_open_file_uris(self, files):
+        """
+        Implement file opening for the application here.
+
+        On some platforms, additional file URIs may be passed to the application
+        after it starts.
+        """
+
+        pass
+
+    def setUp(self):
+        self.init_ui()
 
     def run(self):
         """
@@ -198,13 +249,42 @@ class WebUIView(NativeWebView):
         self.current_url = url
         super(WebUIView, self).load_url(url)
 
+    def present_window(self):
+        """
+        Ask the desktop environment to bring this window to the user's attention.
+        """
+        super(WebUIView, self).present_window()
+
+    def get_view_state(self):
+        """
+        Get any view or app state that was natively persisted by pause / resume actions.
+
+        :return: A dictionary of persisted view or app state properties.
+        """
+
+        # not all backends implement this, so check that NativeWebView.get_persisted_state exists first
+        if hasattr(self, 'get_persisted_state'):
+            return self.get_persisted_state()
+
+        return {}
+
     def show(self):
         """
         Makes the web view visible on screen.
         """
         super(WebUIView, self).show()
 
+    def close(self):
+        """
+        Closes the webview, on platforms which support it.
+        """
+        super(WebUIView, self).close()
+
     def set_title(self, name):
+        try:
+            super(WebUIView, self).set_title(name)
+        except:
+            raise
         self.webview.set_user_agent(self.webview.get_user_agent() + " / " + name)
 
     def call_js_function(self, function_name, *a):
@@ -241,6 +321,9 @@ class WebUIView(NativeWebView):
         if self.protocol is not None and self.delegate is not None and url.startswith(self.protocol):
             return not self.delegate.parse_message(url)
 
+        if self.delegate and hasattr(self.delegate, "should_load_url"):
+            return self.delegate.should_load_url(url)
+
         return True
 
     def webview_did_start_load(self, webview, url=None):
@@ -252,8 +335,11 @@ class WebUIView(NativeWebView):
             self.page_loaded = True
             if self.protocol is not None:
                 webview.evaluate_javascript("bridge.setProtocol('%s')" % self.protocol)
-            if self.delegate:
+            if self.delegate and hasattr(self.delegate, 'load_complete'):
                 self.delegate.load_complete()
+
+        if self.delegate and hasattr(self.delegate, "page_loaded"):
+            self.delegate.page_loaded(url)
 
     def webview_did_fail_load(self, webview, error_code, error_msg):
         self.page_loaded = True  # make sure we don't wait forever if the page fails to load

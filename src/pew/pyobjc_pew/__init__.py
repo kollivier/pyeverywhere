@@ -5,6 +5,8 @@ import objc
 import AppKit
 import PyObjCTools.AppHelper
 
+from . import dialogs
+
 
 def run_on_main_thread(func, *args, **kwargs):
     PyObjCTools.AppHelper.callAfter(func, *args, **kwargs)
@@ -18,6 +20,10 @@ def get_app():
 
 def set_fullscreen():
     pass
+
+
+def choose_file(callback):
+    dialogs.open_file_dialog(callback)
 
 
 def get_resource_url(url):

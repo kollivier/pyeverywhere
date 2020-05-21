@@ -3,7 +3,7 @@ import sys
 
 from setuptools import find_packages, setup
 
-version = '0.9.3'
+version = '0.9.4'
 
 setup(
     name='pyeverywhere',
@@ -13,15 +13,19 @@ setup(
     author_email='kevin@kosoftworks.com',
     license='APL',
     package_dir={'': 'src'},
+    package_data={'': ['controllers/files/*', 'controllers/files/android/org/kosoftworks/pyeverywhere/*']},
     packages=find_packages('src'),
-    install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj'],
+    install_requires=['requests', 'six', 'virtualenv-api'],
     extras_require={
-        ':platform_machine=="x86_64"': 'wxPython'
+        'osx': ['dmgbuild', 'pbxproj'],
+        'installer': ['pyinstaller'],
+        'wxWidgets': ['wxPython'],
+        'gtk': ['pygobject']
     },
     # test_suite = 'your.module.tests',
     entry_points={
         'console_scripts': [
-            'pew = pew.tool:main'
+            'pew = pew.cli.tool:main'
         ]
     }
 )

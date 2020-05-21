@@ -75,6 +75,9 @@ class NativeWebView(object):
     def show(self):
         self.view.present('fullscreen', hide_title_bar=True)
 
+    def close(self):
+        pass
+
     @on_main_thread
     def load_url(self, url):
         if USE_WKWEBKIT:
@@ -95,6 +98,29 @@ class NativeWebView(object):
 
     def reload(self):
         self.webview.reload()
+
+    def go_back(self):
+        self.webview.goBack()
+
+    def go_forward(self):
+        self.webview.goForward()
+
+    def clear_history(self):
+        # setting this to false clears the existing one.
+        self.webview.setMaintainsBackForwardList_(False)
+        self.webview.setMaintainsBackForwardList_(True)
+
+    def get_url(self):
+        return self.webview.mainFrameURL()
+
+    def get_zoom_level(self):
+        raise NotImplementedError
+
+    def set_zoom_level(self, zoom):
+        raise NotImplementedError
+
+    def set_menubar(self, menubar):
+        pass
 
     def get_user_agent(self):
         return ""

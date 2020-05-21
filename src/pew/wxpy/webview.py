@@ -5,36 +5,32 @@ import threading
 import wx
 import wx.html2
 
-useWebKitCtrl = False
-try:
-    import wx.webkit
-    useWebKitCtrl = True
-except Exception as e:
-    if sys.platform.startswith('darwin'):
-        logging.warning("Unable to load WebKitCtrl wrapper")
-
+from ..interfaces import WebViewInterface
 
 logging.info("Initializing WebView?")
 
 PEWThread = threading.Thread
 
+zoom_levels = [
+    wx.html2.WEBVIEW_ZOOM_TINY,
+    wx.html2.WEBVIEW_ZOOM_SMALL,
+    wx.html2.WEBVIEW_ZOOM_MEDIUM,
+    wx.html2.WEBVIEW_ZOOM_LARGE,
+    wx.html2.WEBVIEW_ZOOM_LARGEST
+]
 
-class NativeWebView(object):
+
+class NativeWebView(WebViewInterface):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.view = wx.Frame(None, -1, name, size=size)
 
-        if sys.platform.startswith("darwin"):
-            self.view.SetMenuBar(self.createMacEditMenu())
+        self.webview = wx.html2.WebView.New(self.view)
+        self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
+        self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
 
-        if useWebKitCtrl:
-            self.webview = wx.webkit.WebKitCtrl(self.view, -1)
-            self.webview.Bind(wx.webkit.EVT_WEBKIT_STATE_CHANGED, self.OnLoadStateChanged)
-            self.webview.Bind(wx.webkit.EVT_WEBKIT_BEFORE_LOAD, self.OnBeforeLoad)
-        else:
-            self.webview = wx.html2.WebView.New(self.view)
-            self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
-            self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
-
+        self.default_zoom = self.current_zoom = 4
+        self.max_zoom = 2
+        self.min_zoom = 0.5
         self.view.Bind(wx.EVT_CLOSE, self.OnClose)
 
     def createMacEditMenu(self):
@@ -53,17 +49,47 @@ class NativeWebView(object):
     def show(self):
         self.view.Show()
 
+    def close(self):
+        self.view.Close()
+
+    def reload(self):
+        self.webview.Reload()
+
     def set_fullscreen(self, enable=True):
         self.view.ShowFullScreen(enable)
 
+    def set_menubar(self, menubar):
+        self.view.SetMenuBar(menubar.native_object)
+
     def load_url(self, url):
-        self.webview.LoadURL(url)
+        wx.CallAfter(self.webview.LoadURL, url)
+
+    def get_zoom_level(self):
+        return self.current_zoom
+
+    def set_zoom_level(self, zoom):
+        if zoom / 4 < self.min_zoom or zoom / 4 > self.max_zoom:
+            return
+        self.current_zoom = zoom
+        self.evaluate_javascript('document.documentElement.style.zoom = {}'.format(zoom / 4))
 
     def get_user_agent(self):
         return ""
 
     def set_user_agent(self, user_agent):
         pass
+
+    def get_url(self):
+        return self.webview.GetCurrentURL()
+
+    def clear_history(self):
+        self.webview.ClearHistory()
+
+    def go_back(self):
+        self.webview.GoBack()
+
+    def go_forward(self):
+        self.webview.GoForward()
 
     def evaluate_javascript(self, js):
         js = js.encode('utf8')
@@ -75,9 +101,12 @@ class NativeWebView(object):
 
     def OnBeforeLoad(self, event):
         #self.evaluate_javascript("$('#search_bar').val('%s');" % url)
-        return self.webview_should_start_load(self, event.URL, None)
+        if not self.webview_should_start_load(self, event.URL, None):
+            event.Veto()
 
     def OnLoadComplete(self, event):
+        if not self.current_zoom == self.default_zoom:
+            self.set_zoom_level(self.current_zoom)
         return self.webview_did_finish_load(self)
 
     def OnLoadStateChanged(self, event):

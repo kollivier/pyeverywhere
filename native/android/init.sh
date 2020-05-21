@@ -32,7 +32,7 @@ then
     curl --location http://dl.google.com/android/android-sdk_r24.4.1-$PLATFORM.$FORMAT | tar -x -z -C .
 fi 
 
-android update sdk --no-ui --all --filter platform-tool,android-$ANDROIDAPI,sysimg-$ANDROIDAPI,build-tools-$ANDROIDBUILDTOOLSVER
+echo 'y' | android update sdk --no-ui --all --filter platform-tool,android-$ANDROIDAPI,sysimg-$ANDROIDAPI,build-tools-$ANDROIDBUILDTOOLSVER
 
 if [ ! -d android-ndk-$ANDROIDNDKVER ]
 then
@@ -41,9 +41,9 @@ then
     ./android-ndk.bin
 fi 
 
-echo Downloading http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz
+echo Downloading https://archive.apache.org/dist/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz
 
 if [ ! -d apache-ant-$ANT_VERSION ]
 then
-    curl --location http://mirrors.sonic.net/apache/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
+    curl --location https://archive.apache.org/dist/ant/binaries/apache-ant-$ANT_VERSION-bin.tar.gz | tar -x -z -C .
 fi

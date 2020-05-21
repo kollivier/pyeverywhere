@@ -14,12 +14,12 @@ Functions
 PEWApp
 ======
 
-.. autoclass:: pew.PEWApp
+.. autoclass:: pew.ui.PEWApp
     :members:
     
 WebUIView
 ===========
-.. autoclass:: pew.WebUIView
+.. autoclass:: pew.ui.WebUIView
     :members:
 
 PEW Test Module

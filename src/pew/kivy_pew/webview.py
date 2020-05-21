@@ -80,8 +80,8 @@ class PEWebViewClientInterface(PythonJavaClass):
     def pageLoadComplete(self, view, url):
         if not self.load_complete:
             self.load_complete = True
-            self.delegate.webview_did_finish_load(self.webview, url)
             activity.removeLoadingScreen()
+        self.delegate.webview_did_finish_load(self.webview, url)
 
 
 class AndroidWebView(object):
@@ -93,10 +93,37 @@ class AndroidWebView(object):
         self.create_webview()
         self.url = None
 
+    @run_on_ui_thread
     def load_url(self, url):
         self.url = url
         if self.initialized:
             self.webview.loadUrl(url)
+
+    @run_on_ui_thread
+    def reload(self):
+        self.webview.reload()
+
+    @run_on_ui_thread
+    def go_back(self):
+        self.webview.goBack()
+
+    @run_on_ui_thread
+    def go_forward(self):
+        self.webview.goForward()
+
+    @run_on_ui_thread
+    def clear_history(self):
+        self.webview.clearHistory()
+
+    @run_on_ui_thread
+    def get_url(self):
+        return self.webview.getUrl()
+
+    def get_zoom_level(self):
+        raise NotImplementedError
+
+    def set_zoom_level(self, zoom):
+        raise NotImplementedError
 
     @run_on_ui_thread
     def evaluate_javascript(self, js):
@@ -136,8 +163,21 @@ class NativeWebView(object):
         self.webview = AndroidWebView(client=self.client)
         self.callback.setWebView(self.webview)
 
+    def get_persisted_state(self):
+        state = {}
+        if PythonActivity.mSavedURL:
+            state['URL'] = PythonActivity.mSavedURL
+
+        return state
+
     @run_on_ui_thread
     def show(self):
+        pass
+
+    def close(self):
+        pass
+
+    def set_menubar(self, menubar):
         pass
 
     def set_user_agent(self, user_agent):

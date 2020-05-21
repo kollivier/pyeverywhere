@@ -1,10 +1,5 @@
 START_DIR=$PWD
-DIR=$PWD/native/android
 SCRIPT_DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-
-. $SCRIPT_DIR/setup.sh
-
-cd "$DIR"
 
 echo "PWD is $PWD"
 
@@ -60,6 +55,11 @@ echo "keyalias is ${13}"
 KEYINFO="--keystore ${12} --signkey ${13} --keystorepw ${14}"
 fi
 
+if [ ! -z "${15}" ]
+then
+BUILD_NUMBER="${15}"
+fi
+
 DIST_DIR="$HOME/.local/share/python-for-android/dists"
 if [ "$(uname)" == "Darwin" ]; then
     DIST_DIR="$HOME/.python-for-android/dists"
@@ -67,7 +67,7 @@ fi
 
 echo "Packaging files"
 
-p4a apk --private=$4 $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
+p4a apk --private=$4 $REQUIREMENTS $BUILD_TYPE --package=$1 --name=$2 --dist_name="${DIST_NAME}" --version=$3 --numeric-version="${BUILD_NUMBER}" --permission=INTERNET --permission=WRITE_EXTERNAL_STORAGE --bootstrap=webview $ICON $WHITELIST $ORIENTATION $LAUNCH $INTENT_FILTERS --add-source=$SCRIPT_DIR/src/org/kosoftworks/pyeverywhere $KEYINFO
 
 mkdir -p $START_DIR/dist/android
 if [ ! -d bin ]

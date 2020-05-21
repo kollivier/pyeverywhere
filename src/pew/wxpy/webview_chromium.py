@@ -1,5 +1,6 @@
 import atexit
 import logging
+import os
 import platform
 import sys
 import threading
@@ -8,6 +9,8 @@ import wx
 
 from cefpython3 import cefpython
 WindowUtils = cefpython.WindowUtils()
+
+from ..interfaces import WebViewInterface
 
 MAC = sys.platform.startswith('darwin')
 
@@ -20,19 +23,52 @@ chrome_settings = {
 #    "browser_subprocess_path": "%s/%s" % (
 #        cefpython.GetModuleDirectory(), "subprocess")
 }
+if MAC:
+    cefpython_dir = os.path.dirname(os.path.abspath(cefpython.__file__))
+    cef_framework_dir = os.path.join(cefpython_dir, 'Chromium Embedded Framework.framework')
+    chrome_settings['external_message_pump'] = True
+    chrome_settings['framework_dir_path'] = cef_framework_dir
+    chrome_settings['resources_dir_path'] = os.path.join(cef_framework_dir, 'Resources')
+    chrome_settings["browser_subprocess_path"] = os.path.join(cefpython_dir, 'subprocess')
 
 class ClientHandler:
     # --------------------------------------------------------------------------
     # RequestHandler
     # --------------------------------------------------------------------------
     onload_handled = False
-    def OnBeforeBrowse(self, browser, frame, request, is_redirect):
+    def OnBeforeBrowse(self, browser, frame, request, user_gesture, is_redirect):
         # - frame.GetUrl() returns current url
         # - request.GetUrl() returns new url
         # - Return true to cancel the navigation or false to allow
         # the navigation to proceed.
         if self.callback is not None:
             return not self.callback(request.GetUrl())
+        return False
+
+
+    def OnKeyEvent(self, browser, event, event_handle):
+        """
+        The Mac version is supposed to have handling for cut/copy/paste shortcuts, but
+        they are not functioning properly, so we add our own implementation here.
+        """
+        if MAC:
+            if event["modifiers"] == 128 and event["type"] != cefpython.KEYEVENT_RAWKEYDOWN:
+                if event["native_key_code"] in [7, 8, 9]:
+                    return True
+
+            if event["modifiers"] == 128 and event["type"] == cefpython.KEYEVENT_RAWKEYDOWN:
+                if event["native_key_code"] == 7:
+                    browser.GetFocusedFrame().Cut()
+                    return True
+
+                if event["native_key_code"] == 8:
+                    browser.GetFocusedFrame().Copy()
+                    return True
+
+                elif event["native_key_code"] == 9:
+                    browser.GetFocusedFrame().Paste()
+                    return True
+
         return False
 
 
@@ -46,8 +82,9 @@ logging.info("Initializing WebView?")
 PEWThread = threading.Thread
 
 
-class NativeWebView(object):
+class NativeWebView(WebViewInterface):
     def __init__(self, name="WebView", size=(1024, 768)):
+        self.webview = None
         cefpython.Initialize(chrome_settings)
 
         self.view = wx.Frame(None, -1, name, size=size)
@@ -74,10 +111,13 @@ class NativeWebView(object):
                 logging.error("PyObjC needs to be installed to use Chromium on Mac.")
 
         window_info = cefpython.WindowInfo()
+        settings = {
+            'dom_paste_disabled': False
+        }
         (width, height) = self.browser_panel.GetClientSize().Get()
         window_info.SetAsChild(self.browser_panel.GetHandle(),
                                [0, 0, width, height])
-        self.webview = cefpython.CreateBrowserSync(window_info,
+        self.webview = cefpython.CreateBrowserSync(window_info, settings=settings,
                                              url="about:blank")
 
         client = ClientHandler()
@@ -127,6 +167,9 @@ class NativeWebView(object):
     def set_fullscreen(self, enable=True):
         self.view.ShowFullScreen(enable)
 
+    def set_window_title(self, title):
+        self.view.SetTitle(title)
+
     def load_url(self, url):
         self.webview.LoadUrl(url)
 
@@ -136,8 +179,26 @@ class NativeWebView(object):
     def set_user_agent(self, user_agent):
         pass
 
+    def set_menubar(self, menubar):
+        self.view.SetMenuBar(menubar.native_object)
+
+    def reload(self):
+        self.webview.Reload()
+
+    def go_back(self):
+        self.webview.GoBack()
+
+    def go_forward(self):
+        self.webview.GoForward()
+
+    def clear_history(self):
+        pass
+
+    def get_url(self):
+        return self.webview.GetUrl()
+
     def evaluate_javascript(self, js):
-        self.webview.GetBrowser().GetMainFrame().ExecuteJavascript(js)
+        self.webview.GetMainFrame().ExecuteJavascript(js)
 
     def OnClose(self, event):
         logging.info("OnClose called...")
