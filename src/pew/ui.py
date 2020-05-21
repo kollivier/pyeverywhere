@@ -124,6 +124,10 @@ class PEWApp(NativePEWApp):
     # Set this to a value like "com.example.Application" in a subclass.
     application_id = None
 
+    # Set to true if this application will accept file open requests from the
+    # system.
+    handles_open_file_uris = False
+
     def __init__(self):
         super(PEWApp, self).__init__()
 
@@ -135,6 +139,28 @@ class PEWApp(NativePEWApp):
 
         It is expected that you will have a visible WebUIView by the time this method
         completes. If not, some platforms may shut down the app.
+        """
+
+        pass
+
+    def handle_command_line(self, argv):
+        """
+        Implement command line processing for the application here.
+
+        On some platforms, additional command line arguments may be passed to
+        the application after it starts. This function runs before init_ui.
+        Raising an Exception or SystemExit, such as with argparse, causes the
+        application to exit early.
+        """
+
+        pass
+
+    def handle_open_file_uris(self, files):
+        """
+        Implement file opening for the application here.
+
+        On some platforms, additional file URIs may be passed to the application
+        after it starts.
         """
 
         pass
@@ -222,6 +248,12 @@ class WebUIView(NativeWebView):
         """
         self.current_url = url
         super(WebUIView, self).load_url(url)
+
+    def present_window(self):
+        """
+        Ask the desktop environment to bring this window to the user's attention.
+        """
+        super(WebUIView, self).present_window()
 
     def get_view_state(self):
         """

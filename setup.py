@@ -15,9 +15,10 @@ setup(
     package_dir={'': 'src'},
     package_data={'': ['controllers/files/*', 'controllers/files/android/org/kosoftworks/pyeverywhere/*']},
     packages=find_packages('src'),
-    install_requires=['requests', 'six', 'virtualenv-api', 'pbxproj', 'pyinstaller'],
+    install_requires=['requests', 'six', 'virtualenv-api'],
     extras_require={
-        'osx': ['dmgbuild'],
+        'osx': ['dmgbuild', 'pbxproj'],
+        'installer': ['pyinstaller'],
         'wxWidgets': ['wxPython'],
         'gtk': ['pygobject']
     },
