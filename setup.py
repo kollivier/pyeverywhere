@@ -17,7 +17,7 @@ setup(
     packages=find_packages('src'),
     install_requires=['requests', 'six', 'virtualenv-api'],
     extras_require={
-        'osx': ['dmgbuild', 'pbxproj'],
+        ':sys_platform=="darwin"': ['dmgbuild', 'pbxproj'],
         'installer': ['pyinstaller'],
         'wxWidgets': ['wxPython'],
         'gtk': ['pygobject']

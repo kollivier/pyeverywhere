@@ -2,7 +2,16 @@ import glob
 import subprocess
 import sys
 
-import pbxproj
+# if we're not on Mac, don't rely on this library. This controller doesn't run on other platforms
+# so don't raise an error there.
+try:
+    import pbxproj
+except:
+    if sys.platform.startswith('darwin'):
+        raise
+    else:
+        pass
+
 import plistlib
 
 import pewtools
