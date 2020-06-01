@@ -1,4 +1,5 @@
 import logging
+import warnings
 import wx
 
 from .. import get_app_name
@@ -12,10 +13,20 @@ app = None
 
 
 def choose_file(callback):
+    warnings.warn(
+        "choose_file is deprecated, use show_open_file_dialog instead. choose_file will be removed in v1.0",
+        DeprecationWarning
+    )
+    return show_open_file_dialog(callback)
+
+
+def show_open_file_dialog(callback, options=dict()):
     picked_file = None
     if app and app.GetTopWindow():
         def call_file_dialog(callback):
             dlg = wx.FileDialog(app.GetTopWindow(), "Select a file to open")
+            if 'directory' in options:
+                dlg.SetDirectory(options['directory'])
             result = dlg.ShowModal()
             if result != wx.ID_CANCEL:
                 callback(dlg.GetPath())
