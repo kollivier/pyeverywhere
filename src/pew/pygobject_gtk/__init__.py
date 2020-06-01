@@ -2,6 +2,7 @@ import logging
 import marshal
 import os
 import sys
+import warnings
 
 import gi
 gi.require_version('Gio', '2.0')
@@ -25,6 +26,14 @@ def run_on_main_thread(func, *args, **kwargs):
 
 
 def choose_file(callback):
+    warnings.warn(
+        "choose_file is deprecated, use show_open_file_dialog instead. choose_file will be removed in v1.0",
+        DeprecationWarning
+    )
+    return show_open_file_dialog(callback)
+
+
+def show_open_file_dialog(callback, options=dict()):
     if app:
         top_window = app.gtk_get_top_window()
     else:

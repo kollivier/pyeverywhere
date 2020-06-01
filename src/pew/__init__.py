@@ -271,3 +271,24 @@ def get_app_files_dir():
     # iOS and Android store documents inside their own special folders, 
     # so the directory is already app-specific
     return get_user_path(app_name)
+
+def get_user_docs_dir():
+    """
+    Returns the path to the user's documents directory.
+
+    :return:
+    """
+    docs_dir = os.path.join(get_user_dir(), 'Documents')
+    if not os.path.exists(docs_dir):
+        os.makedirs(docs_dir)
+
+    return docs_dir
+
+def get_app_docs_dir():
+    global app_name
+
+    app_docs_dir = os.path.join(get_user_docs_dir(), app_name)
+    if not os.path.exists(app_docs_dir):
+        os.makedirs(app_docs_dir)
+
+    return app_docs_dir
