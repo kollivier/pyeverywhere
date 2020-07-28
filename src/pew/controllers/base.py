@@ -70,6 +70,17 @@ class BaseBuildController:
         """
         return os.path.join(self.get_source_dir_relative(), 'main.py')
 
+    def get_import_hooks_script_path(self):
+        """
+        Returns the relative path to a Python script with extra import hooks, if needed.
+        :return: A string to a main.py Python script, or None if not specified.
+        """
+
+        if 'import_hooks_file' in self.project_info:
+            return os.path.join(self.get_source_dir_relative(), self.project_info['import_hooks_file'])
+
+        return None
+
     def get_dist_dir(self):
         """
         Returns the directory relative to the project build root where build outputs to be packaged are stored.
@@ -257,11 +268,13 @@ class BaseBuildController:
         return 0
 
     def pyinstaller_build(self):
+        import PyInstaller.__main__
+
         # if we don't do this, PyInstaller will ask to confirm overwrite.
         if os.path.exists(self.get_dist_dir()):
             shutil.rmtree(self.get_dist_dir(), ignore_errors=True)
 
-        cmd = ['pyinstaller', '-D', '-n', self.project_info['name'], '--distpath', self.get_dist_dir(), '--noconsole']
+        cmd = ['-D', '-n', self.project_info['name'], '--distpath', self.get_dist_dir(), '--noconsole']
 
         if 'packages' in self.project_info:
             for pkg in self.project_info['packages']:
@@ -296,7 +309,16 @@ class BaseBuildController:
                 cmd.append('--add-data={}'.format(data_str))
 
         cmd.append(self.get_main_script_path())
-        self.run_cmd(cmd)
+        import_hooks_file = self.get_import_hooks_script_path()
+        if import_hooks_file:
+            if os.path.exists(import_hooks_file):
+                cmd.append(self.get_import_hooks_script_path())
+            else:
+                print("Cannot find {}".format(import_hooks_file))
+                print("Make sure the file exists and the path is relative to your project's source directory.")
+
+        # run directly via Python as we can hit command line max length limits
+        PyInstaller.__main__.run(cmd)
 
     def run_cmd(self, cmd):
         """
