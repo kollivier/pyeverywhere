@@ -7,6 +7,8 @@ import sys
 
 from distutils.core import setup
 
+from .utils import get_value_for_platform
+
 
 class BaseBuildController:
     """
@@ -218,13 +220,13 @@ class BaseBuildController:
         data_files = [('.', [os.path.join(self.project_root, "project_info.json")])]
 
         if "packages" in self.project_info:
-            packages.extend(self.project_info["packages"])
+            packages.extend(get_value_for_platform("packages", self.platform, []))
 
         if "includes" in self.project_info:
-            includes.extend(self.project_info["includes"])
+            includes.extend(get_value_for_platform("includes", self.platform, []))
 
         if "excludes" in self.project_info:
-            excludes.extend(self.project_info["excludes"])
+            excludes.extend(get_value_for_platform("excludes", self.platform, []))
 
         dist_dir = self.get_dist_dir()
 

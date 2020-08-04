@@ -211,7 +211,6 @@ def build(args):
     controller = get_build_controller(args, info_file)
 
     requirements = get_value_for_platform("requirements", args.platform, [])
-    requirements = requirements + get_value_for_platform("requirements", "common", [])
 
     ignore_paths = []
     if args.config != "":
