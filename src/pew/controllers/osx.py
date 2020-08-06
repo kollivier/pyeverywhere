@@ -1,7 +1,8 @@
 import glob
 import logging
-import subprocess
 import sys
+import tempfile
+import zipfile
 
 from .base import BaseBuildController
 from .utils import *
@@ -10,8 +11,14 @@ this_dir = os.path.abspath(os.path.dirname(__file__))
 files_dir = os.path.join(this_dir, 'files')
 
 
-def codesign_mac(path, identity):
-    cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--sign", identity]
+def codesign_mac(path, identity, entitlements=None):
+    cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--timestamp", "--sign", identity]
+
+    if not entitlements:
+        entitlements = os.path.join(files_dir, 'entitlements_default.plist')
+
+    # Use Apple's hardened runtime so that apps can be signed for newer OS versions / certs.
+    cmd.extend(["--entitlements", entitlements, "--options", "runtime"])
 
     cmd.append(path)
     logging.info("running %s" % " ".join(cmd))
@@ -29,11 +36,40 @@ def codesign_mac(path, identity):
         sys.exit(1)
     else:
         logging.info("Code signing succeeded for %s" % path)
-        cmd = ['codesign', "--verify", "--deep", "--verbose=4", path]
-        logging.info("calling %s" % " ".join(cmd))
-        if subprocess.call(cmd) != 0:
-            print("Code signed application failed validation.")
-            sys.exit(1)
+
+
+def codesign_zip_files(zip_path, identity):
+    zip = zipfile.ZipFile(zip_path, 'r')
+
+    temp_dir = tempfile.mkdtemp()
+    cwd = os.getcwd()
+    os.chdir(temp_dir)
+    # extract the files from the zip first, then sign them and use the zip utility to update them.
+    # we do this because zip has a weird feature where you can have two files with the same name
+    # in an archive, and Python doesn't provide a method to actually overwrite the file. Thankfully,
+    # this is the default behavior of the zip command.
+    files_to_update = []
+    try:
+        for afile in zip.namelist():
+            basename, ext = os.path.splitext(afile)
+            if ext in ['.so', '.dylib']:
+                zip.extract(afile)
+                files_to_update.append(afile)
+
+        zip.close()
+
+        for update_file in files_to_update:
+            codesign_mac(update_file, identity)
+            # it's important that the update file path passed in to the zip command is the same
+            # as the relative path in the zip file, so that it overwrites that file instead of adding
+            # a new one.
+            cmd = ['zip', zip_path, update_file]
+            print("Calling {}".format(' '.join(cmd)))
+            subprocess.call(cmd)
+
+    finally:
+        os.chdir(cwd)
+        shutil.rmtree(temp_dir)
 
 
 class OSXBuildController(BaseBuildController):
@@ -47,27 +83,45 @@ class OSXBuildController(BaseBuildController):
 
     def build(self, settings):
         returncode = self.distutils_build()
-        if "codesign" in self.project_info:
+        if self.args.sign:
+            identity = os.getenv('MAC_CODESIGN_IDENTITY', None)
+            if not identity and "codesign" in self.project_info:
+                identity = self.project_info['codesign']["osx"]["identity"]
             base_path = self.get_app_path()
             print("base_path = %r" % base_path)
-            # remove the .py files and the .pyo files as we shouldn't use them
-            # running a .py file in the bundle can modify it.
-            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources", "lib", "python2.7")):
+            sign_paths = []
+            zip_paths = []
+
+            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources")):
                 for afile in files:
                     fullpath = os.path.join(root, afile)
-                    ext = os.path.splitext(fullpath)[1]
+                    basename, ext = os.path.splitext(fullpath)
+                    # remove the .py files and the .pyo files as we shouldn't use them
+                    # running a .py file in the bundle can modify it.
                     if ext in ['.py', '.pyo']:
-                        os.remove(fullpath)
+                        if os.path.exists(basename + '.pyc'):
+                            os.remove(fullpath)
+                    elif ext in ['.so', '.dylib', '.framework']:
+                        sign_paths.append(fullpath)
+                    elif ext == '.zip':
+                        zip_paths.append(fullpath)
 
-            sign_paths = []
+            # we need to update the zip before we start codesigning.
+            for path in zip_paths:
+                codesign_zip_files(path, identity)
+
             sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
             sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
-            exes = ["Python"]
-            for exe in exes:
-                sign_paths.append(os.path.join(base_path, 'Contents', 'MacOS', exe))
+            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "MacOS", "*")))
             sign_paths.append(base_path)  # the main app needs to be signed last
             for path in sign_paths:
-                codesign_mac(path, self.project_info["codesign"]["osx"]["identity"])
+                codesign_mac(path, identity)
+
+            cmd = ['codesign', "--verify", "--deep", "--verbose=4", base_path]
+            logging.info("calling %s" % " ".join(cmd))
+            if subprocess.call(cmd) != 0:
+                print("Code signed application failed validation.")
+                sys.exit(1)
 
         return returncode
 

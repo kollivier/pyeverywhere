@@ -211,7 +211,6 @@ def build(args):
     controller = get_build_controller(args, info_file)
 
     requirements = get_value_for_platform("requirements", args.platform, [])
-    requirements = requirements + get_value_for_platform("requirements", "common", [])
 
     ignore_paths = []
     if args.config != "":
@@ -277,6 +276,7 @@ def main():
     build_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to build project for. Choices are: %r' % (platforms,))
     build_opt.add_argument('--release', action='store_true', help='Build the app in release mode.')
     build_opt.add_argument('--config', default=None, help='Specify a Python config file to use when building the app.')
+    build_opt.add_argument('--sign', action='store_true', help='Codesign the build.')
     build_opt.set_defaults(func=build)
 
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")

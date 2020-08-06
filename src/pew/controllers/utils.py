@@ -52,14 +52,35 @@ def set_project_info(info):
 
 
 def get_value_for_platform(key, platform_name, default_return=None):
-    global info_json
-    if key in info_json:
-        if platform_name in info_json[key]:
-            return info_json[key][platform_name]
-        elif default_key in info_json[key]:
-            return info_json[key][default_key]
+    """
+    Checks the info_json key, and if it finds a dict with platform keys, or the special keys "common" or "default",
+    it will merge them
 
-    return default_return
+    :param key:
+    :param platform_name:
+    :param default_return:
+    :return:
+    """
+    global info_json
+    value = default_return
+    if key in info_json:
+        if isinstance(info_json[key], dict):
+            if platform_name in info_json[key]:
+                value = info_json[key][platform_name]
+            elif default_key in info_json[key]:
+                value = info_json[key][default_key]
+
+            if 'common' in info_json[key]:
+                if value:
+                    value = value + info_json[key]['common']
+                else:
+                    value = info_json[key]['common']
+
+        if not value:
+            # if no platform key is set, just return the value.
+            value = info_json[key]
+
+    return value
 
 
 def get_value_for_config(key, config_name, default_return=None):
