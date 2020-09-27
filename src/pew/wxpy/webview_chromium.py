@@ -10,6 +10,10 @@ import wx
 from cefpython3 import cefpython
 WindowUtils = cefpython.WindowUtils()
 
+# Note: this works because we don't import pew UI submodules during initial module load.
+# if that changes, we'll need to rework this.
+import pew
+
 from ..interfaces import WebViewInterface
 
 MAC = sys.platform.startswith('darwin')
@@ -17,7 +21,7 @@ MAC = sys.platform.startswith('darwin')
 chrome_settings = {
     "debug": True,
     "log_severity": cefpython.LOGSEVERITY_INFO,
-    "log_file": "debug.log",
+    "log_file": os.path.join(pew.get_app_files_dir(), "chromium.log"),
 #    "log_severity": cefpython.LOGSEVERITY_INFO,
 #    "release_dcheck_enabled": True, # Enable only when debugging.
 #    "browser_subprocess_path": "%s/%s" % (
