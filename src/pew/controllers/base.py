@@ -278,6 +278,10 @@ class BaseBuildController:
 
         cmd = ['-D', '-n', self.project_info['name'], '--distpath', self.get_dist_dir(), '--noconsole']
 
+        icon = get_value_for_platform('icons', self.platform)
+        if icon:
+            cmd.append('--icon={}'.format(os.path.abspath(icon)))
+
         if 'packages' in self.project_info:
             for pkg in self.project_info['packages']:
                 cmd.append('--hidden-import={}'.format(pkg))
