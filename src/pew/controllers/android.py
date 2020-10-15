@@ -202,8 +202,7 @@ class AndroidBuildController(BaseBuildController):
         if not os.path.exists(venv_dir):
             os.makedirs(venv_dir)
         if "packages" in self.project_info:
-            python = "python2.7"
-            pewtools.copy_deps_to_build(self.project_info["packages"], venv_dir, build_dir, python)
+            pewtools.copy_deps_to_build(self.project_info["packages"], venv_dir, build_dir)
         copy_pew_module(build_dir)
 
         shutil.rmtree(venv_dir)
