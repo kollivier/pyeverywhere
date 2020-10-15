@@ -69,7 +69,6 @@ def run_command(cmd):
     global command_env
     if verbose:
         print("Running command: %r" % cmd)
-        print("Environment: %r" % (command_env,))
     return subprocess.call(cmd, env=command_env)
 
 
@@ -150,8 +149,7 @@ def run(args):
     controller = get_build_controller(args, info_file)
     copy_config_file(args)
     if args.platform == "android":
-        apk_name = "%s-%s-debug.apk" % (info_json["name"].replace(" ", ""), info_json["version"])
-        apk_file = os.path.join(cwd, "dist", "android", apk_name)
+        apk_file = glob.glob("dist/android/*.apk")[0]
         if not os.path.exists(apk_file):
             print("Could not find APK file to run at %s" % apk_file)
             print("Please ensure that you have performed a build and that it succeeded, and try again.")
@@ -277,16 +275,18 @@ def main():
     build_opt.add_argument('--release', action='store_true', help='Build the app in release mode.')
     build_opt.add_argument('--config', default=None, help='Specify a Python config file to use when building the app.')
     build_opt.add_argument('--sign', action='store_true', help='Codesign the build.')
+    build_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
     build_opt.set_defaults(func=build)
 
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
     new_opt.add_argument('name', help='Name of project to create')
     new_opt.add_argument('--template', default='default', help='Specify a project template for the app. Choices are: %r' % (templates,))
-
+    new_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
     new_opt.set_defaults(func=create)
 
     up_opt = commands.add_parser('init', help="Initialize the PyEverywhere dependencies for the project in the current working directory.")
     up_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to run the project on. Choices are: %r' % (platforms,))
+    up_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
     up_opt.set_defaults(func=init)
 
     run_opt = commands.add_parser('run', help="Run PyEverywhere project")

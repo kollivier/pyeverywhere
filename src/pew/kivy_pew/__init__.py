@@ -2,7 +2,7 @@ import logging
 import time
 import urllib
 
-from runnable import run_on_ui_thread
+from .runnable import run_on_ui_thread
 
 
 @run_on_ui_thread

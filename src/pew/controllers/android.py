@@ -37,10 +37,11 @@ class AndroidBuildController(BaseBuildController):
     This class manages Android builds of PyEverywhere projects.
     """
 
-    default_android_sdk = "19"
-    default_android_build_tools = "23.0.3"
-    default_requirements = ["openssl","python2","pyjnius","genericndkbuild"]
-    android_ndk_version = 'r10e'
+    default_android_sdk = "29"
+    default_android_build_tools = "29.0.2"
+    default_arch = 'armeabi-v7a'
+    default_requirements = ["openssl","python3","pyjnius","genericndkbuild"]
+    android_ndk_version = 'r21'
     ant_version = '1.9.9'
 
     platform = 'android'
@@ -97,24 +98,35 @@ class AndroidBuildController(BaseBuildController):
         requirements = settings['requirements']
         extra_build_options = settings.get('extra_build_options', {})
         services = extra_build_options.get('services', [])
-        permissions = set(extra_build_options.get('extra_permissions', []) + ['INTERNET', 'WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
+        permissions = set(extra_build_options.get('extra_permissions', []) + ['WRITE_EXTERNAL_STORAGE', 'ACCESS_NETWORK_STATE'])
+        minsdk = str(extra_build_options.get("minsdk", ""))
+        fileprovider_paths_filename = extra_build_options.get('fileprovider_paths_filename')
         sdk = str(extra_build_options.get("sdk", ""))
 
         cmd = ['p4a', 'apk',
+                '--window',
                 '--bootstrap', self.bootstrap,
                 '--package', self.project_info['identifier'],
                 '--name', filename,
-                '--dist_name', '{}_dist'.format(filename),
+                '--dist_name', self.get_dist_name(),
                 '--version', self.project_info["version"],
                 '--private', build_dir,
+                '--arch', self.get_arch(),
                 '--add-source', os.path.join(files_dir, 'org', 'kosoftworks', 'pyeverywhere'),
         ]
 
+        if minsdk:
+            cmd.extend(['--minsdk', minsdk])
+            cmd.extend(['--ndk-api', minsdk])
+
         if sdk:
-            cmd.extend(['--sdk', sdk])
+            cmd.extend(['--android-api', sdk])
 
         for service in services:
             cmd.extend(['--service', service])
+
+        if fileprovider_paths_filename:
+            cmd.extend(['--fileprovider-paths', os.path.join(src_dir, fileprovider_paths_filename)])
 
         for permission in permissions:
             cmd.extend(['--permission', permission])
@@ -122,7 +134,7 @@ class AndroidBuildController(BaseBuildController):
         if len(requirements) > 0:
             requirements = ",".join(requirements)
         else:
-            requirements = "python2,pyjnius,genericndkbuild"
+            requirements = ",".join(self.default_requirements)
         cmd.extend(['--requirements', requirements])
 
         has_build_version_num = False
@@ -170,26 +182,11 @@ class AndroidBuildController(BaseBuildController):
             intent_filters = os.path.abspath(intent_filters)
             cmd.extend(['--intent-filters', intent_filters])
 
-        keystore = ""
-        keyalias = ""
-        keypasswd = ""
-
-        build_type = ""
         if self.args.release:
-            build_type = "release"
-            signing = get_value_for_platform("codesign", "android")
-            if signing:
-                keystore = os.path.abspath(signing['keystore'])
-                keyalias = signing['alias']
-                if 'passwd' in signing:
-                    keypasswd = signing['passwd']
-                else:
-                    keypasswd = getpass.getpass()
-
-                cmd.extend(['--keystore', keystore, '--signkey', keyalias, '--keystorepw', keypasswd])
-
-        if build_type == "release":
             cmd.append('--release')
+
+            if 'P4A_RELEASE_KEYSTORE' in self.get_env():
+                cmd.append('--sign')
 
         if os.path.exists(build_dir):
             shutil.rmtree(build_dir)
@@ -219,6 +216,12 @@ class AndroidBuildController(BaseBuildController):
 
         return result
 
+    def get_arch(self):
+        arch = self.default_arch
+        if '64bit' in self.args.extra_args:
+            arch = 'arm64-v8a'
+        return arch
+
     def get_dist_name(self):
         return "{}_dist".format(self.project_info["name"].replace(" ", ""))
 
@@ -233,6 +236,7 @@ class AndroidBuildController(BaseBuildController):
         cmd = [
             'p4a',
             'create',
+            '--arch', self.get_arch(),
             '--dist_name', self.get_dist_name(),
             '--bootstrap', self.bootstrap,
 
