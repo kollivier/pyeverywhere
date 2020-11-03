@@ -115,7 +115,13 @@ class WinBuildController(BaseBuildController):
         self.run_cmd([install_generator, install_script])
 
     def _create_innosetup_install_script(self, output_path):
+        if not 'id' in self.project_info:
+            print("On Windows, projects need a UUID. Please add the following to your project_info.json file:")
+            import uuid
+            print('"id": "{}"'.format(uuid.uuid4()))
+            sys.exit(1)
         values = {
+            'id': self.project_info['id'],
             'app_path': os.path.dirname(self.get_app_path()),
             'app_name': self.project_info['name'],
             'app_version': self.project_info['version'],
