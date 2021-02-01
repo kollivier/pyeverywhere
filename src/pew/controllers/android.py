@@ -202,7 +202,14 @@ class AndroidBuildController(BaseBuildController):
         if not os.path.exists(venv_dir):
             os.makedirs(venv_dir)
         if "packages" in self.project_info:
-            pewtools.copy_deps_to_build(self.project_info["packages"], venv_dir, build_dir)
+            packages = get_value_for_platform("packages", "android")
+            # requirements use p4a recipes, which should always be used
+            # instead of pip installation.
+            for package in list(packages):
+                if package in requirements:
+                    packages.remove(package)
+            if packages:
+                pewtools.copy_deps_to_build(packages, venv_dir, build_dir)
         copy_pew_module(build_dir)
 
         shutil.rmtree(venv_dir)
