@@ -184,13 +184,13 @@ class BaseBuildController:
         """
         pass
 
-    def build(self):
+    def build(self, settings):
         """
         Creates a native app for the platform specified to the PyEverywhere command line interface.
         Build outputs will go to the build directory (see get_build_dir()), while any final, packagable outputs
         will go to the distribution directory (see get_dist_dir()).
         """
-        pass
+        raise NotImplementedError("Build support has not been implemented for this platform.")
 
     def dist(self):
         """
