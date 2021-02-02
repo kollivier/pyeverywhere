@@ -187,6 +187,9 @@ class NativeWebView(object):
     def get_user_agent(self):
         return self.webview.get_user_agent()
 
+    def clear_history(self):
+        self.webview.clear_history()
+
     @run_on_ui_thread
     def load_url(self, url):
         self.webview.load_url(url)
