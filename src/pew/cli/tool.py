@@ -15,6 +15,7 @@ import webbrowser
 
 import pewtools
 
+from pew.config import load_project_info
 from pew.constants import platforms as pew_platforms
 from pew.controllers import get_build_controller
 from pew.controllers.utils import *
@@ -333,12 +334,16 @@ def main():
             print("Unable to find project info file at %s. pew cannot continue." % info_file)
             sys.exit(1)
 
+        try:
+            global info_json
+            info_json = load_project_info()
+        except KeyError:
+            print("project_info.json references environment variables that are not set.")
+            print("Please ensure any environment variables it references are set and try again.")
+            sys.exit(1)
+
         # FIXME: Remove these globals once we better encapsulate the build logic into controllers.
         global command_env
-        global info_json
-        info_json = json.loads(open(info_file, "r").read())
-        set_project_info(info_json)
-
         controller = get_build_controller(args, info_file)
         command_env = controller.get_env()
 

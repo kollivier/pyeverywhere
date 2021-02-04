@@ -2,7 +2,7 @@ import json
 import os
 import shutil
 import struct
-import subprocess
+import sys
 
 default_key = "default"
 pew_config = {}
@@ -16,6 +16,8 @@ if not os.path.exists(config_dir):
     os.makedirs(config_dir)
 
 config_file = os.path.join(config_dir, "config.json")
+
+from ..config import get_project_info
 
 
 def load_pew_config(filename=config_file):
@@ -46,11 +48,6 @@ def save_pew_config(filename=config_file):
         f.close()
 
 
-def set_project_info(info):
-    global info_json
-    info_json = info
-
-
 def get_value_for_platform(key, platform_name, default_return=None):
     """
     Checks the info_json key, and if it finds a dict with platform keys, or the special keys "common" or "default",
@@ -61,7 +58,7 @@ def get_value_for_platform(key, platform_name, default_return=None):
     :param default_return:
     :return:
     """
-    global info_json
+    info_json = get_project_info()
     value = default_return
     if key in info_json:
         if isinstance(info_json[key], dict):
@@ -84,6 +81,7 @@ def get_value_for_platform(key, platform_name, default_return=None):
 
 
 def get_value_for_config(key, config_name, default_return=None):
+    info_json = get_project_info()
     if key in info_json:
         if "configs" in info_json[key] and config_name in info_json[key]["configs"]:
             return info_json[key]["configs"][config_name]
@@ -109,7 +107,6 @@ def copy_files(src_dir, build_dir, ignore_paths):
     print("Copying source files to build tree, please wait...")
     shutil.copytree(src_dir, build_dir, ignore=ignore)
 
-    shutil.copy2(os.path.join(cwd, "project_info.json"), build_dir)
 
 def copy_data_files(data_files, build_dir):
     for out_dir, files in data_files:

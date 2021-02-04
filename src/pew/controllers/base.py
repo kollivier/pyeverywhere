@@ -8,6 +8,7 @@ import sys
 from distutils.core import setup
 
 from .utils import get_value_for_platform
+from ..config import load_project_info
 
 
 class BaseBuildController:
@@ -21,7 +22,7 @@ class BaseBuildController:
 
     def __init__(self, project_info_file, cmd_args):
         self.project_root = os.path.dirname(project_info_file)
-        self.project_info = json.loads(open(project_info_file).read())
+        self.project_info = load_project_info(project_info_file)
         self.args = cmd_args
         self.platform = self.args.platform
 
@@ -198,8 +199,17 @@ class BaseBuildController:
         """
         pass
 
+    def generate_project_info_file(self):
+        # The project config source file may have unresolved values in the form of environment
+        # variables. Instead of copying the source file, we export the loaded data to a file
+        # (with all values resolved) and bundle that file instead.
+        built_project_info = os.path.join(self.get_build_dir(), "project_info.json")
+        with open(built_project_info, 'w', encoding='utf-8') as output:
+            output.write(json.dumps(self.project_info, indent=4, ensure_ascii=False))
+        return built_project_info
+
     def get_data_files(self):
-        data_files = [('.', [os.path.join(self.project_root, "project_info.json")])]
+        data_files = [('.', [self.generate_project_info_file()])]
 
         data_files.extend(self.get_app_data_files())
 

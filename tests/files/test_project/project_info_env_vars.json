@@ -1,0 +1,5 @@
+{
+    "name": "${APP_NAME}",
+    "version": "${APP_VERSION}",
+    "identifier": "org.pyeverywhere.SampleProject"
+}

@@ -164,6 +164,7 @@ class IOSBuildController(BaseBuildController):
         dest_dir = os.path.join(project_build_dir, "Script")
         script_ignore_paths = settings['ignore_paths'] + self.project_info['asset_dirs']
         copy_files(src_dir, dest_dir, script_ignore_paths)
+        self.generate_project_info_file()
         copy_pew_module(dest_dir)
         copy_data_files(self.get_app_data_files(), project_build_dir)
 

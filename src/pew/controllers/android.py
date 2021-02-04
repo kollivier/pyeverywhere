@@ -197,6 +197,7 @@ class AndroidBuildController(BaseBuildController):
 
         copy_files(src_dir, build_dir, ignore_paths)
         copy_data_files(data_files, build_dir)
+        self.generate_project_info_file()
 
         venv_dir = os.path.join(build_dir, "venv")
         if not os.path.exists(venv_dir):
