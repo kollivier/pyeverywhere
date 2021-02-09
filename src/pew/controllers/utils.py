@@ -69,7 +69,7 @@ def get_value_for_platform(key, platform_name, default_return=None):
 
             if 'common' in info_json[key]:
                 if value:
-                    value = value + info_json[key]['common']
+                    value = info_json[key]['common'] + value
                 else:
                     value = info_json[key]['common']
         else:

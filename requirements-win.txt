@@ -1,4 +1,2 @@
-cefpython3==57.0
-py2exe==0.6.9
-pywin32==219
+cefpython3
 wxPython==4.1.1
