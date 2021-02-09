@@ -134,12 +134,10 @@ class BaseBuildController:
         return platform_dir
 
     def get_app_data_files(self):
-        asset_dirs = []
         data_files = []
         source_dir_name = self.get_source_dir_relative()
-        if "asset_dirs" in self.project_info:
-            asset_dirs = self.project_info["asset_dirs"]
-        else:
+        asset_dirs = get_value_for_platform("asset_dirs", self.platform, default_return=list())
+        if len(asset_dirs) == 0:
             message = "WARNING: Specifying asset_dirs with a list of directories for your app's static files is now required. Please add \"asset_dirs\": ['{}/files'] to your project_info.json file.".format(source_dir_name)
             print(message)
             asset_dirs = [os.path.join(source_dir_name, 'files')]
@@ -312,7 +310,7 @@ class BaseBuildController:
             this_dir_rel = os.path.relpath(this_dir, src_dir)
             # PyInstaller expects hook dirs to be relative to the CWD, not absolute paths.
             cmd.append('--additional-hooks-dir={}'.format(os.path.join(this_dir_rel, 'files', 'hooks')))
-        except:
+        except ImportError:
             logging.info("Could not find CEFPython, so not installing hook.")
             pass
 

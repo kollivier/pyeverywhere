@@ -72,9 +72,7 @@ def get_value_for_platform(key, platform_name, default_return=None):
                     value = value + info_json[key]['common']
                 else:
                     value = info_json[key]['common']
-
-        if not value:
-            # if no platform key is set, just return the value.
+        else:
             value = info_json[key]
 
     return value
