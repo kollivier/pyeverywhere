@@ -27,6 +27,7 @@ class NativeWebView(WebViewInterface):
         self.webview = wx.html2.WebView.New(self.view)
         self.webview.Bind(wx.html2.EVT_WEBVIEW_NAVIGATING, self.OnBeforeLoad)
         self.webview.Bind(wx.html2.EVT_WEBVIEW_LOADED, self.OnLoadComplete)
+        self.webview.Bind(wx.html2.EVT_WEBVIEW_ERROR, self.OnLoadError)
 
         self.default_zoom = self.current_zoom = 4
         self.max_zoom = 2
@@ -112,3 +113,7 @@ class NativeWebView(WebViewInterface):
     def OnLoadStateChanged(self, event):
         if event.GetState() == wx.webkit.WEBKIT_STATE_STOP:
             return self.OnLoadComplete(event)
+
+    def OnLoadError(self, event):
+        logging.error("Error loading URL: {}".format(event.GetURL()))
+        logging.error("Error code: {}, message: {}".format(event.GetInt(), event.GetString()))
