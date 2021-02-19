@@ -227,7 +227,7 @@ class BaseBuildController:
         includes = []
         excludes = []
         packages = []
-        data_files = [('.', [os.path.join(self.project_root, "project_info.json")])]
+        data_files = [('.', [self.generate_project_info_file()])]
 
         if "packages" in self.project_info:
             packages.extend(get_value_for_platform("packages", self.platform, []))
