@@ -1,5 +1,6 @@
 import glob
 import logging
+import subprocess
 import sys
 import tempfile
 import zipfile
