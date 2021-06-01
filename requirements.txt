@@ -7,7 +7,7 @@ py2exe==0.6.9
 pywin32==219
 requests==2.18.3
 six==1.10.0
-urllib3==1.22
+urllib3==1.26.5
 virtualenv==15.1.0
 virtualenv-api==2.1.16
 wxPython==4.0.0b1
