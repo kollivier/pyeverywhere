@@ -27,7 +27,13 @@ class WinBuildController(BaseBuildController):
         return app_path
 
     def get_install_generator_path(self):
-        return r'C:\Program Files (x86)\Inno Setup 5\iscc.exe'
+        iscc_path = r'C:\Program Files (x86)\Inno Setup 6\iscc.exe'
+        if not os.path.exists(iscc_path):
+            iscc_path = r'C:\Program Files (x86)\Inno Setup 5\iscc.exe'
+        if os.path.exists(iscc_path):
+            return iscc_path
+
+        return None
 
     def get_dll_excludes(self):
         """
@@ -105,11 +111,10 @@ class WinBuildController(BaseBuildController):
 
         install_script = self._create_innosetup_install_script(output_path)
         install_generator = self.get_install_generator_path()
-        if not os.path.exists(install_generator):
-            print("Unable to create intallation package as the installer generator cannot be found at: ")
-            print(install_generator)
-            print("Currently, only Inno Setup 5 is supported for installer creation.")
-            print("Please install Inno Setup 5 if you wish to generate an installer.")
+        if not install_generator or not os.path.exists(install_generator):
+            print("Unable to create intallation package as InnoSetup cannot be found.")
+            print("Currently, only Inno Setup 5 or above is supported for installer creation.")
+            print("Please install Inno Setup if you wish to generate an installer.")
             sys.exit(1)
 
         self.run_cmd([install_generator, install_script])
