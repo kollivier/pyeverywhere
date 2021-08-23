@@ -11,6 +11,7 @@ from .utils import *
 this_dir = os.path.abspath(os.path.dirname(__file__))
 files_dir = os.path.join(this_dir, 'files')
 
+mac_lib_exts = ['.dylib', '.so']
 
 def codesign_mac(path, identity, entitlements=None):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--timestamp", "--sign", identity]
@@ -53,7 +54,7 @@ def codesign_zip_files(zip_path, identity):
     try:
         for afile in zip.namelist():
             basename, ext = os.path.splitext(afile)
-            if ext in ['.so', '.dylib']:
+            if ext in mac_lib_exts:
                 zip.extract(afile)
                 files_to_update.append(afile)
 
@@ -94,6 +95,12 @@ class OSXBuildController(BaseBuildController):
             zip_paths = []
 
             for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources")):
+                # .framework is a bundle directory that codesign treats like a file to sign.
+                for adir in dirs:
+                    fullpath = os.path.join(root, adir)
+                    if adir.endswith('.framework'):
+                        sign_paths.append(fullpath)
+
                 for afile in files:
                     fullpath = os.path.join(root, afile)
                     basename, ext = os.path.splitext(fullpath)
@@ -102,7 +109,7 @@ class OSXBuildController(BaseBuildController):
                     if ext in ['.py', '.pyo']:
                         if os.path.exists(basename + '.pyc'):
                             os.remove(fullpath)
-                    elif ext in ['.so', '.dylib', '.framework']:
+                    elif ext in mac_lib_exts:
                         sign_paths.append(fullpath)
                     elif ext == '.zip':
                         zip_paths.append(fullpath)
