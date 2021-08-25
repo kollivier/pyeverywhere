@@ -3,6 +3,7 @@ import logging
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 from .base import BaseBuildController
@@ -11,7 +12,7 @@ from .utils import *
 this_dir = os.path.abspath(os.path.dirname(__file__))
 files_dir = os.path.join(this_dir, 'files')
 
-mac_lib_exts = ['.dylib', '.so']
+mac_lib_exts = ['.a', '.dylib', '.plugin', '.so']
 
 def codesign_mac(path, identity, entitlements=None):
     cmd = ["codesign", "--force", "-vvv", "--verbose=4", "--timestamp", "--sign", identity]
@@ -74,6 +75,17 @@ def codesign_zip_files(zip_path, identity):
         shutil.rmtree(temp_dir)
 
 
+def is_executable(filename):
+    try:
+        output = subprocess.check_output(['file', os.path.abspath(filename)])
+        # Executable scripts are reported as 'text executable' so exclude those.
+        return b"executable" in output and not b"text" in output
+    except:
+        raise
+
+    return False
+
+
 class OSXBuildController(BaseBuildController):
     """
     This class manages OS X builds of PyEverywhere projects.
@@ -86,52 +98,147 @@ class OSXBuildController(BaseBuildController):
     def build(self, settings):
         returncode = self.distutils_build()
         if self.args.sign:
-            identity = os.getenv('MAC_CODESIGN_IDENTITY', None)
-            if not identity and "codesign" in self.project_info:
-                identity = self.project_info['codesign']["osx"]["identity"]
-            base_path = self.get_app_path()
-            print("base_path = %r" % base_path)
-            sign_paths = []
-            zip_paths = []
-
-            for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources")):
-                # .framework is a bundle directory that codesign treats like a file to sign.
-                for adir in dirs:
-                    fullpath = os.path.join(root, adir)
-                    if adir.endswith('.framework'):
-                        sign_paths.append(fullpath)
-
-                for afile in files:
-                    fullpath = os.path.join(root, afile)
-                    basename, ext = os.path.splitext(fullpath)
-                    # remove the .py files and the .pyo files as we shouldn't use them
-                    # running a .py file in the bundle can modify it.
-                    if ext in ['.py', '.pyo']:
-                        if os.path.exists(basename + '.pyc'):
-                            os.remove(fullpath)
-                    elif ext in mac_lib_exts:
-                        sign_paths.append(fullpath)
-                    elif ext == '.zip':
-                        zip_paths.append(fullpath)
-
-            # we need to update the zip before we start codesigning.
-            for path in zip_paths:
-                codesign_zip_files(path, identity)
-
-            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
-            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
-            sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "MacOS", "*")))
-            sign_paths.append(base_path)  # the main app needs to be signed last
-            for path in sign_paths:
-                codesign_mac(path, identity)
-
-            cmd = ['codesign', "--verify", "--deep", "--verbose=4", base_path]
-            logging.info("calling %s" % " ".join(cmd))
-            if subprocess.call(cmd) != 0:
-                print("Code signed application failed validation.")
-                sys.exit(1)
+            print("The --sign argument is deprecated and will be removed in version 1.0. Please use pew codesign instead.")
+            returncode = self.codesign()
 
         return returncode
+
+    def codesign(self):
+        identity = os.getenv('MAC_CODESIGN_IDENTITY', None)
+        if not identity and "codesign" in self.project_info:
+            identity = self.project_info['codesign']["osx"]["identity"]
+            # TODO: Deprecate in 1.0
+            if identity:
+                print("Adding identity to project_info.json is deprected and will be removed in v1.0.")
+                print("Please set MAC_CODESIGN_IDENTITY in your environment instead.")
+        if not identity:
+            print("MAC_CODESIGN_IDENTITY must be set for signing to work properly.")
+            sys.exit(1)
+
+        base_path = self.get_app_path()
+        print("base_path = %r" % base_path)
+        sign_paths = []
+        zip_paths = []
+
+        for root, dirs, files in os.walk(os.path.join(base_path, "Contents", "Resources")):
+            # .framework is a bundle directory that codesign treats like a file to sign.
+            for adir in dirs:
+                fullpath = os.path.join(root, adir)
+                if fullpath.endswith('.framework'):
+                    sign_paths.append(fullpath)
+
+            for afile in files:
+                fullpath = os.path.join(root, afile)
+                basename, ext = os.path.splitext(fullpath)
+                # remove the .py files and the .pyo files as we shouldn't use them
+                # running a .py file in the bundle can modify it.
+                if ext in ['.py', '.pyo']:
+                    if os.path.exists(basename + '.pyc'):
+                        os.remove(fullpath)
+                elif ext in mac_lib_exts:
+                    sign_paths.append(fullpath)
+                elif ext == '.zip':
+                    zip_paths.append(fullpath)
+                elif is_executable(fullpath):
+                    sign_paths.append(fullpath)
+
+        # we need to update the zip before we start codesigning.
+        for path in zip_paths:
+            codesign_zip_files(path, identity)
+
+        sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.framework")))
+        sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "Frameworks", "*.dylib")))
+        sign_paths.extend(glob.glob(os.path.join(base_path, "Contents", "MacOS", "*")))
+        sign_paths.append(base_path)  # the main app needs to be signed last
+        for path in sign_paths:
+            codesign_mac(path, identity)
+
+        cmd = ['codesign', "--verify", "--deep", "--verbose=4", base_path]
+        logging.info("calling %s" % " ".join(cmd))
+        if subprocess.call(cmd) != 0:
+            print("Code signed application failed validation.")
+            sys.exit(1)
+
+        return 0
+
+    def notarize(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            dev_email = os.getenv("MAC_DEV_ID_EMAIL")
+            dev_pass = os.getenv("MAC_APP_PASSWORD")
+            mac_notarization_provider = os.getenv("MAC_NOTARIZATION_PROVIDER")
+            if not dev_email or not dev_pass:
+                print("You must specify your Apple developer account information using the MAC_DEV_ID_EMAIL")
+                print("and MAC_APP_PASSWORD environment variables in order to codesign the build.")
+                sys.exit(1)
+            bundle_id = self.project_info['identifier']
+            app = os.path.basename(self.get_app_path())
+            zip = '{}.zip'.format(app)
+
+            os.chdir("dist/osx")
+            assert os.path.exists(app), "You need to build an app to be notarized first."
+
+            if os.path.exists(zip):
+                os.remove(zip)
+
+            cmd = ['zip', '-yr', zip, app]
+            subprocess.call(cmd)
+
+            assert os.path.exists(zip), "You need to build an app to be notarized first."
+
+            cmd = [
+                "xcrun", "altool", "--notarize-app",
+                "--file", zip,
+                "--type", "osx",
+                "--username", dev_email,
+                "--primary-bundle-id", bundle_id,
+                "--output-format", "xml",
+            ]
+
+            cmd.extend(['--password', dev_pass])
+            if mac_notarization_provider:
+                cmd.extend(['--asc-provider', mac_notarization_provider])
+            print("Uploading app for notarization, this may take a while...")
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            notarization_plist = os.path.join(temp_dir, 'notarization.plist')
+            if result.stdout:
+                f = open(notarization_plist, 'wb')
+                f.write(result.stdout)
+                f.close()
+
+            print("Upload for notarization successful.")
+            if result.returncode == 0 and self.args.wait:
+                print("Waiting on notarization result, this may take some time...")
+                plist_buddy = '/usr/libexec/PlistBuddy'
+                notarization_result = None
+                request_uuid = subprocess.check_output([plist_buddy, '-c', 'Print notarization-upload:RequestUUID', notarization_plist])
+                while not notarization_result:
+                    cmd = ['xcrun', 'altool', '--notarization-info',
+                           request_uuid, '-u', dev_email, '-p', dev_pass,
+                           '--output-format', 'xml']
+                    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    if result.returncode == 0:
+                        status_plist = os.path.join(temp_dir, 'notarization_status.plist')
+                        if result.stdout:
+                            f = open(status_plist, 'wb')
+                            f.write(result.stdout)
+                            f.close()
+
+                        status = subprocess.check_output(
+                            [plist_buddy, '-c', 'Print notarization-info:Status', status_plist])
+                        status = status.decode('utf-8').strip()
+                        if status == 'in progress':
+                            time.sleep(10)
+                        else:
+                            notarization_result = status
+                print(f"Notarization result: {notarization_result}")
+            elif result.returncode != 0:
+                print(result.stdout)
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+        return result.returncode
 
     def dist(self):
         if not os.path.exists(self.get_app_path()):

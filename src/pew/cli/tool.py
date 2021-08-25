@@ -240,6 +240,24 @@ def init(args):
     controller.init()
 
 
+def codesign(args):
+    """
+    For now, this is just an alias for update.
+    """
+    controller = get_build_controller(args, info_file)
+    controller.codesign()
+
+
+def notarize(args):
+    """
+    For now, this is just an alias for update.
+    """
+    if not sys.platform.startswith('darwin'):
+        print("The notarize command must be run on Mac.")
+    controller = get_build_controller(args, info_file)
+    controller.notarize()
+
+
 def update(args):
     print("Copying latest dependencies into project...")
 
@@ -271,13 +289,24 @@ def main():
     # parser.add_argument("command", description="", help="Command to run. Acceptable commands are: %r" % commands)
     commands = parser.add_subparsers(title='commands', help='Commands to operate on PyEverywhere projects')
 
-    build_opt = commands.add_parser('build', help="Build PyEverywhere binary")
+    build_opt = commands.add_parser('build', help="Build a native application")
     build_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to build project for. Choices are: %r' % (platforms,))
     build_opt.add_argument('--release', action='store_true', help='Build the app in release mode.')
     build_opt.add_argument('--config', default=None, help='Specify a Python config file to use when building the app.')
     build_opt.add_argument('--sign', action='store_true', help='Codesign the build.')
     build_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
     build_opt.set_defaults(func=build)
+
+    build_opt = commands.add_parser('codesign', help="Code sign native application")
+    build_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to build project for. Choices are: %r' % (platforms,))
+    build_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
+    build_opt.set_defaults(func=codesign)
+
+    build_opt = commands.add_parser('notarize', help="Notarize native application (Mac only)")
+    build_opt.add_argument('platform', choices=platforms, nargs='?', default=get_default_platform(), help='Platform to build project for. Choices are: %r' % (platforms,))
+    build_opt.add_argument('--wait', action='store_true', help='Wait until notarization is successful or failed to return.')
+    build_opt.add_argument('extra_args', nargs=argparse.REMAINDER)
+    build_opt.set_defaults(func=notarize)
 
     new_opt = commands.add_parser('create', help="Create new PyEverywhere project in the current working directory")
     new_opt.add_argument('name', help='Name of project to create')

@@ -126,7 +126,7 @@ class BaseBuildController:
         :return: A string path to an existing directory.
         """
         platform_dir = os.path.join(self.project_root, dir_name, self.platform)
-        if self.args.config:
+        if hasattr(self.args, 'config') and self.args.config:
             platform_dir = os.path.join(platform_dir, self.args.config)
 
         if not os.path.exists(platform_dir):
@@ -192,6 +192,23 @@ class BaseBuildController:
         will go to the distribution directory (see get_dist_dir()).
         """
         raise NotImplementedError("Build support has not been implemented for this platform.")
+
+    def codesign(self):
+        """
+        Code signs a native application. Each platform must specify environment variables containing
+        the secrets for code signing.
+
+        On Mac:
+        - MAC_CODESIGN_IDENTITY: This is the name of your signing cert.
+        For notarization:
+        - MAC_DEV_ID_EMAIL: The email address of the developer account signing the build.
+        - MAC_APP_PASSWORD: Application-specific password, see Apple's notarization instructions for more.
+        - MAC_NOTARIZATION_PROVIDER: If the account belongs to multiple teams, use this to specify which should notarize.
+        """
+        raise NotImplementedError("Code signing support has not been implemented for this platform.")
+
+    def notarize(self):
+        raise NotImplementedError("Notarization is currently a Mac-specific action.")
 
     def dist(self):
         """
