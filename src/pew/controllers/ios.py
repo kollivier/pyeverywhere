@@ -68,7 +68,7 @@ class IOSBuildController(BaseBuildController):
             plist['NSBluetoothPeripheralUsageDescription'] = "This app requires access to a bluetooth peripheral."
 
             icons = get_value_for_platform("icons", "ios", [])
-            if len(icons) > 0:
+            if len(icons) > 0 and not isinstance(icons, dict):
                 appicon_dir = os.path.join(project_xcode_dir, "Assets.xcassets", "AppIcon.appiconset")
                 contents_file = os.path.join(appicon_dir, "Contents.json")
                 contents = json.loads(open(contents_file).read())

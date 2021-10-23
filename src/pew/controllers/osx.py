@@ -305,7 +305,7 @@ class OSXBuildController(BaseBuildController):
         }
 
         icons = get_value_for_platform("icons", "osx", None)
-        if icons:
+        if icons and not isinstance(icons, dict):
             py2app_opts['iconfile'] = icons
 
         return {'py2app': py2app_opts}

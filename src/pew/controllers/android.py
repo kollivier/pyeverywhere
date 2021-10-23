@@ -152,7 +152,7 @@ class AndroidBuildController(BaseBuildController):
         cmd.extend(['--numeric-version', self.project_info['build_number']])
 
         icon_file = get_value_for_platform("icons", "android")
-        if icon_file:
+        if icon_file and not isinstance(icon_file, dict):
             icon = os.path.abspath(icon_file)
             if not os.path.exists(icon):
                 icon_dir = os.path.join(cwd, "icons", "android")

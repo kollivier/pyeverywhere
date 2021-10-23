@@ -306,7 +306,7 @@ class BaseBuildController:
         cmd = ['-D', '-n', self.project_info['name'], '--distpath', self.get_dist_dir(), '--noconsole']
 
         icon = get_value_for_platform('icons', self.platform)
-        if icon:
+        if icon and not isinstance(icon, dict):
             cmd.append('--icon={}'.format(os.path.abspath(icon)))
 
         if 'packages' in self.project_info:
