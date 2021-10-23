@@ -89,7 +89,8 @@ PEWThread = threading.Thread
 class NativeWebView(WebViewInterface):
     def __init__(self, name="WebView", size=(1024, 768)):
         self.webview = None
-        cefpython.Initialize(chrome_settings)
+        cli_settings = {'enable-media-stream': '1', 'autoplay-policy': 'no-user-gesture-required'}
+        cefpython.Initialize(chrome_settings, cli_settings)
 
         self.view = wx.Frame(None, -1, name, size=size)
 
