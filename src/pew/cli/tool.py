@@ -74,7 +74,7 @@ def run_command(cmd):
 
 
 def run_python_script(script, args):
-    py_exe = 'python'
+    py_exe = sys.executable
 
     # On OS X, when running in a virtualenv we need to run scripts from within
     # the framework's Python.app bundle to run GUI apps.
