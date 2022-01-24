@@ -235,12 +235,13 @@ class OSXBuildController(BaseBuildController):
                         else:
                             notarization_result = status
 
+                print(f"Notarization result: {notarization_result}")
                 if status == 'success':
                     print("Stapling notarization to app.")
                     subprocess.call(['xcrun', 'stapler', 'staple', app])
                 else:
                     print("Notarization failed. Please check your emails for details.")
-                print(f"Notarization result: {notarization_result}")
+                    return 1
             elif result.returncode != 0:
                 print("Attempt to notarize software failed. Here is the command output:")
                 print(result.stdout)
