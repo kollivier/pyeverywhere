@@ -214,7 +214,7 @@ class OSXBuildController(BaseBuildController):
                 plist_buddy = '/usr/libexec/PlistBuddy'
                 notarization_result = None
                 request_uuid = subprocess.check_output([plist_buddy, '-c', 'Print notarization-upload:RequestUUID', notarization_plist])
-                while not notarization_result and wait_time < wait_timeout:
+                while not notarization_result or wait_time < wait_timeout:
                     cmd = ['xcrun', 'altool', '--notarization-info',
                            request_uuid, '-u', dev_email, '-p', dev_pass,
                            '--output-format', 'xml']
