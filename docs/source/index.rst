@@ -15,6 +15,8 @@ Contents
    :maxdepth: 2
    
    overview
+   getting_started
+   macpython
    license
    pew
    project_info

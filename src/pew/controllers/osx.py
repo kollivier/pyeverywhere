@@ -208,11 +208,13 @@ class OSXBuildController(BaseBuildController):
 
             print("Upload for notarization successful.")
             if result.returncode == 0 and self.args.wait:
+                wait_timeout = 600
+                wait_time = 0
                 print("Waiting on notarization result, this may take some time...")
                 plist_buddy = '/usr/libexec/PlistBuddy'
                 notarization_result = None
                 request_uuid = subprocess.check_output([plist_buddy, '-c', 'Print notarization-upload:RequestUUID', notarization_plist])
-                while not notarization_result:
+                while not notarization_result and wait_time < wait_timeout:
                     cmd = ['xcrun', 'altool', '--notarization-info',
                            request_uuid, '-u', dev_email, '-p', dev_pass,
                            '--output-format', 'xml']
@@ -229,14 +231,18 @@ class OSXBuildController(BaseBuildController):
                         status = status.decode('utf-8').strip()
                         if status == 'in progress':
                             time.sleep(10)
+                            wait_time += 10
                         else:
                             notarization_result = status
 
                 if status == 'success':
                     print("Stapling notarization to app.")
                     subprocess.call(['xcrun', 'stapler', 'staple', app])
+                else:
+                    print("Notarization failed. Please check your emails for details.")
                 print(f"Notarization result: {notarization_result}")
             elif result.returncode != 0:
+                print("Attempt to notarize software failed. Here is the command output:")
                 print(result.stdout)
 
         finally:
