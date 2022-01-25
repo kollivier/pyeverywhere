@@ -225,12 +225,13 @@ class OSXBuildController(BaseBuildController):
                     # This command may sporadically fail, so retry it a couple times before bailing.
                     if result.returncode != 0:
                         if error_retries < 5:
+                            print(f"Get info command has failed {error_retries} times. Retrying command in 15 seconds...")
                             time.sleep(15)
                             wait_time += 15
                             error_retries += 1
                             continue
                         else:
-                            notification_result = "Unknown"
+                            notarization_result = "Unknown"
                             break
 
                     status_plist = os.path.join(temp_dir, 'notarization_status.plist')
