@@ -214,15 +214,24 @@ class OSXBuildController(BaseBuildController):
                 plist_buddy = '/usr/libexec/PlistBuddy'
                 notarization_result = None
                 status = "Unknown"
+                error_retries = 0
                 request_uuid = subprocess.check_output([plist_buddy, '-c', 'Print notarization-upload:RequestUUID', notarization_plist])
+                time.sleep(10)
                 while not notarization_result or wait_time < wait_timeout:
                     cmd = ['xcrun', 'altool', '--notarization-info',
                            request_uuid, '-u', dev_email, '-p', dev_pass,
                            '--output-format', 'xml']
                     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    # This command may sporadically fail, so retry it a couple times before bailing.
                     if result.returncode != 0:
-                        notarization_result = "Unknown"
-                        break
+                        if error_retries < 5:
+                            time.sleep(15)
+                            wait_time += 15
+                            error_retries += 1
+                            continue
+                        else:
+                            notification_result = "Unknown"
+                            break
 
                     status_plist = os.path.join(temp_dir, 'notarization_status.plist')
                     if result.stdout:
