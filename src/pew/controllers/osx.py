@@ -219,21 +219,24 @@ class OSXBuildController(BaseBuildController):
                            request_uuid, '-u', dev_email, '-p', dev_pass,
                            '--output-format', 'xml']
                     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    if result.returncode == 0:
-                        status_plist = os.path.join(temp_dir, 'notarization_status.plist')
-                        if result.stdout:
-                            f = open(status_plist, 'wb')
-                            f.write(result.stdout)
-                            f.close()
+                    if result.returncode != 0:
+                        notarization_result = "Unknown"
+                        break
 
-                        status = subprocess.check_output(
-                            [plist_buddy, '-c', 'Print notarization-info:Status', status_plist])
-                        status = status.decode('utf-8').strip()
-                        if status == 'in progress':
-                            time.sleep(10)
-                            wait_time += 10
-                        else:
-                            notarization_result = status
+                    status_plist = os.path.join(temp_dir, 'notarization_status.plist')
+                    if result.stdout:
+                        f = open(status_plist, 'wb')
+                        f.write(result.stdout)
+                        f.close()
+
+                    status = subprocess.check_output(
+                        [plist_buddy, '-c', 'Print notarization-info:Status', status_plist])
+                    status = status.decode('utf-8').strip()
+                    if status == 'in progress':
+                        time.sleep(10)
+                        wait_time += 10
+                    else:
+                        notarization_result = status
 
                 print(f"Notarization result: {notarization_result}")
                 if status == 'success':
