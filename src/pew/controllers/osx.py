@@ -172,23 +172,13 @@ class OSXBuildController(BaseBuildController):
                 print("and MAC_APP_PASSWORD environment variables in order to codesign the build.")
                 sys.exit(1)
             bundle_id = self.project_info['identifier']
-            app = os.path.basename(self.get_app_path())
-            zip = '{}.zip'.format(app)
+            dmg = self.get_dmg_path()
 
-            os.chdir("dist/osx")
-            assert os.path.exists(app), "You need to build an app to be notarized first."
-
-            if os.path.exists(zip):
-                os.remove(zip)
-
-            cmd = ['zip', '-yr', zip, app]
-            subprocess.call(cmd)
-
-            assert os.path.exists(zip), "You need to build an app to be notarized first."
+            assert os.path.exists(dmg), "Cannot find disk image to be notarized. Have you run pew package?"
 
             cmd = [
                 "xcrun", "altool", "--notarize-app",
-                "--file", zip,
+                "--file", dmg,
                 "--type", "osx",
                 "--username", dev_email,
                 "--primary-bundle-id", bundle_id,
@@ -252,7 +242,7 @@ class OSXBuildController(BaseBuildController):
                 print(f"Notarization result: {notarization_result}")
                 if notarization_result == 'success':
                     print("Stapling notarization to app.")
-                    subprocess.call(['xcrun', 'stapler', 'staple', app])
+                    subprocess.call(['xcrun', 'stapler', 'staple', dmg])
                 else:
                     print("Notarization failed. Please check your emails for details. Command output:")
                     print(result.stdout)
@@ -270,27 +260,34 @@ class OSXBuildController(BaseBuildController):
 
         return result.returncode
 
-    def dist(self):
-        if not os.path.exists(self.get_app_path()):
-            print("Built application does not exist. Please run `pew build` first and then re-run this command.")
-            sys.exit(1)
-        settings_file = self._create_dmgbuild_settings_file()
-
+    def get_dmg_path(self):
         version = self.project_info['version']
         full_app_name = '{}-{}'.format(self.project_info['name'], version)
         path_name = full_app_name.replace(" ", "_").lower()
 
         if 'disk_image' in self.project_info:
-            if 'volume_name' in self.project_info['disk_image']:
-                full_app_name = self.project_info['disk_image']['volume_name']
-
             if 'filename' in self.project_info['disk_image']:
                 path_name = self.project_info['disk_image']['filename']
 
         if 'build_number' in self.project_info:
             path_name += '-build{}'.format(self.project_info['build_number'])
 
-        output_path = os.path.join(self.get_package_dir(), '{}.dmg'.format(path_name))
+        return os.path.join(self.get_package_dir(), '{}.dmg'.format(path_name))
+
+    def dist(self):
+        if not os.path.exists(self.get_app_path()):
+            print("Built application does not exist. Please run `pew build` first and then re-run this command.")
+            sys.exit(1)
+        settings_file = self._create_dmgbuild_settings_file()
+
+        output_path = self.get_dmg_path()
+
+        full_app_name = os.path.splitext(os.path.basename(output_path))[0].replace('_', ' ')
+
+        if 'disk_image' in self.project_info:
+            if 'volume_name' in self.project_info['disk_image']:
+                full_app_name = self.project_info['disk_image']['volume_name']
+
         if os.path.exists(output_path):
             os.remove(output_path)
         # dmgbuild is a Python script, so we need to run it using the python executable.
