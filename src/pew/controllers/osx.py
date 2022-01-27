@@ -192,7 +192,7 @@ class OSXBuildController(BaseBuildController):
                 "--type", "osx",
                 "--username", dev_email,
                 "--primary-bundle-id", bundle_id,
-                "--output-format", "xml",
+                "--output-format", "json",
             ]
 
             cmd.extend(['--password', dev_pass])
@@ -200,27 +200,27 @@ class OSXBuildController(BaseBuildController):
                 cmd.extend(['--asc-provider', mac_notarization_provider])
             print("Uploading app for notarization, this may take a while...")
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            notarization_plist = os.path.join(temp_dir, 'notarization.plist')
+            notarization_info = {}
             if result.stdout:
-                f = open(notarization_plist, 'wb')
-                f.write(result.stdout)
-                f.close()
+                notarization_info = json.loads(result.stdout.decode('utf-8'))
 
             print("Upload for notarization successful.")
             if result.returncode == 0 and self.args.wait:
                 wait_timeout = 600
                 wait_time = 0
                 print("Waiting on notarization result, this may take some time...")
-                plist_buddy = '/usr/libexec/PlistBuddy'
                 notarization_result = None
                 status = "Unknown"
                 error_retries = 0
-                request_uuid = subprocess.check_output([plist_buddy, '-c', 'Print notarization-upload:RequestUUID', notarization_plist])
-                time.sleep(10)
-                while not notarization_result or wait_time < wait_timeout:
+                request_uuid = notarization_info['notarization-upload']['RequestUUID']
+                while notarization_result is None:
+                    if wait_time > wait_timeout:
+                        notarization_result = "Timed out"
+                        break
+
                     cmd = ['xcrun', 'altool', '--notarization-info',
                            request_uuid, '-u', dev_email, '-p', dev_pass,
-                           '--output-format', 'xml']
+                           '--output-format', 'json']
                     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     # This command may sporadically fail, so retry it a couple times before bailing.
                     if result.returncode != 0:
@@ -234,23 +234,23 @@ class OSXBuildController(BaseBuildController):
                             notarization_result = "Unknown"
                             break
 
-                    status_plist = os.path.join(temp_dir, 'notarization_status.plist')
                     if result.stdout:
-                        f = open(status_plist, 'wb')
-                        f.write(result.stdout)
-                        f.close()
+                        notarization_status = json.loads(result.stdout.decode('utf-8'))
 
-                    status = subprocess.check_output(
-                        [plist_buddy, '-c', 'Print notarization-info:Status', status_plist])
-                    status = status.decode('utf-8').strip()
-                    if status == 'in progress':
-                        time.sleep(10)
-                        wait_time += 10
+                        status = notarization_status['notarization-info']['Status']
+                        print(f"Current notarization status = '{status}'")
+                        if status == 'in progress':
+                            print("Checking again in 10 seconds...")
+                            time.sleep(10)
+                            wait_time += 10
+                        else:
+                            notarization_result = status
                     else:
-                        notarization_result = status
+                        print("No stdout output for notarization status call?")
+                        notarization_result = "unknown"
 
                 print(f"Notarization result: {notarization_result}")
-                if status == 'success':
+                if notarization_result == 'success':
                     print("Stapling notarization to app.")
                     subprocess.call(['xcrun', 'stapler', 'staple', app])
                 else:
@@ -258,8 +258,12 @@ class OSXBuildController(BaseBuildController):
                     print(result.stdout)
                     return 1
             elif result.returncode != 0:
-                print("Attempt to notarize software failed. Here is the command output:")
-                print(result.stdout)
+                print("Attempt to notarize software failed. The following error was reported")
+                if notarization_info and 'product-errors' in notarization_info:
+                    for error in notarization_info['product-errors']:
+                        print(error['message'])
+                else:
+                    print(result.stdout)
 
         finally:
             shutil.rmtree(temp_dir)
