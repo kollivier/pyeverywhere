@@ -214,7 +214,7 @@ class BaseBuildController:
         """
         Creates a distributable package for your app. This command can only be run after a successful build.
         """
-        pass
+        return 0
 
     def generate_project_info_file(self):
         # The project config source file may have unresolved values in the form of environment

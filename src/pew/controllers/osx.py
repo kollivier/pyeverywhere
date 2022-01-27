@@ -292,7 +292,7 @@ class OSXBuildController(BaseBuildController):
             os.remove(output_path)
         # dmgbuild is a Python script, so we need to run it using the python executable.
         dmgbuild_cmd = ['dmgbuild', '-s', settings_file, full_app_name, output_path]
-        self.run_cmd(dmgbuild_cmd)
+        return self.run_cmd(dmgbuild_cmd)
 
     def get_platform_data_files(self):
         return []

@@ -117,7 +117,7 @@ class WinBuildController(BaseBuildController):
             print("Please install Inno Setup if you wish to generate an installer.")
             sys.exit(1)
 
-        self.run_cmd([install_generator, install_script])
+        return self.run_cmd([install_generator, install_script])
 
     def _create_innosetup_install_script(self, output_path):
         if not 'id' in self.project_info:

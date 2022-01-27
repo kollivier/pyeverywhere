@@ -255,7 +255,7 @@ def notarize(args):
     if not sys.platform.startswith('darwin'):
         print("The notarize command must be run on Mac.")
     controller = get_build_controller(args, info_file)
-    controller.notarize()
+    return controller.notarize()
 
 
 def update(args):
@@ -274,13 +274,14 @@ def update(args):
             import traceback
             logging.error(traceback.format_exc(e))
 
+    return 0
 
 def dist(args):
     """
     For now, this is just an alias for update.
     """
     controller = get_build_controller(args, info_file)
-    controller.dist()
+    return controller.dist()
 
 
 def main():
