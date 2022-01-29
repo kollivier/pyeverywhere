@@ -174,7 +174,7 @@ class OSXBuildController(BaseBuildController):
             bundle_id = self.project_info['identifier']
             dmg = self.get_dmg_path()
 
-            assert os.path.exists(dmg), "Cannot find disk image to be notarized. Have you run pew package?"
+            assert os.path.exists(dmg), "No disk image found at {dmg}. Please double-check that packaging succeeded."
 
             cmd = [
                 "xcrun", "altool", "--notarize-app",
