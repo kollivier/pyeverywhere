@@ -244,8 +244,8 @@ class OSXBuildController(BaseBuildController):
                     print("Stapling notarization to app.")
                     subprocess.call(['xcrun', 'stapler', 'staple', dmg])
                 else:
-                    print("Notarization failed. Please check your emails for details. Command output:")
-                    print(result.stdout)
+                    print("Notarization failed. For more inforation, run the following command and visit the URL it returns:")
+                    print(f'xcrun altool --notarization-info {request_uuid} -u $MAC_DEV_ID_EMAIL -p $MAC_APP_PASSWORD')
                     return 1
             elif result.returncode != 0:
                 print("Attempt to notarize software failed. The following error was reported")
