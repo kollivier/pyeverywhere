@@ -46,23 +46,31 @@ Once you've found the correct notarization provider, create a MAC_NOTARIZATION_P
 Creating a Github Action for Codesigning (macOS)
 =================================================
 
-Step 1: Export your developer ID certificate for upload to Github
+**Step 1: Export your developer ID certificate for upload to Github**
 
 Follow the instructions here, up until the step copying the certificate to the clipboard:
 
 https://localazy.com/blog/how-to-automatically-sign-macos-apps-using-github-actions
 
-Step 2: Set up the necessary secrets (i.e. environment variables) for the Github Action
+**Step 2: Set up the necessary secrets (i.e. environment variables) for the Github Action**
 
 To do this, go to your repo's settings page, then go to the Secrets section. Click the button
 to add a new secret, then create the following environment variables:
 
-MAC_CODESIGN_IDENTITY, MAC_DEV_ID_EMAIL, MAC_APP_PASSWORD - see above for details
+MAC_CODESIGN_IDENTITY
+
+MAC_DEV_ID_EMAIL
+
+MAC_APP_PASSWORD: see above for details
+
 KEYCHAIN_PASSWORD: just a password for the build machine to use, set it to whatever you want.
+
 MAC_CODESIGN_CERT: paste the contents of the p12 file into this one.
+
 P12_PASSWORD: enter the password you used when creating the certificate.
 
-Step 3: Add a .yml with the Github action for building. An example can
-be found here:
+**Step 3: Add a .yml with the Github action for building.**
+
+An example can be found here:
 
 https://github.com/kollivier/brightwriter/blob/develop/.github/workflows/python-app.yml
