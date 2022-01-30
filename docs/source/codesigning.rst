@@ -9,19 +9,22 @@ On macOS, to support app codesigning, you need an Apple Developer account along
 with a Developer ID Application certificate. Once you have that, make sure to set
 the following environment variables:
 
-`MAC_CODESIGN_IDENTITY` - the certificate name, typically `Developer ID Application: <your_identity>`.
-`MAC_DEV_ID_EMAIL` - the email address associated with your Apple Developer ID.
-`MAC_APP_PASSWORD` - App-specific password, see here on how to create https://support.apple.com/en-us/HT204397
+MAC_CODESIGN_IDENTITY: The certificate name, typically `Developer ID Application: <your_identity>`.
+
+MAC_DEV_ID_EMAIL: The email address associated with your Apple Developer ID.
+
+MAC_APP_PASSWORD: App-specific password, see here on how to create https://support.apple.com/en-us/HT204397
 
 Then, the process for creating a codesigned and notarized app is as follows:
 
-```
-pew build
-pew codesign
-pew package
-pew notarize [--wait]
+.. code-block::
 
-Passing --wait to notarize will cause pew to wait until the app has been notarized,
+    pew build
+    pew codesign
+    pew package
+    pew notarize [--wait]
+
+Passing `--wait` to notarize will cause pew to wait until the app has been notarized,
 and "staple" the notarization to the package. This ensures that the notarization
 is recognized even for offline distribution.
 
@@ -34,9 +37,11 @@ In order to do so, you need to specify what they refer to as a
 `notarization provider`. You can get a list of provider names for your account
 using the following command:
 
-`xcrun altool --list-providers -u $MAC_DEV_ID_EMAIL -p $MAC_APP_PASSWORD`
+::
 
-Once you've found the correct notarization provider, create a `MAC_NOTARIZATION_PROVIDER` secret with that as the value.
+    xcrun altool --list-providers -u $MAC_DEV_ID_EMAIL -p $MAC_APP_PASSWORD`
+
+Once you've found the correct notarization provider, create a MAC_NOTARIZATION_PROVIDER secret with that as the value.
 
 Creating a Github Action for Codesigning (macOS)
 =================================================
@@ -52,7 +57,12 @@ Step 2: Set up the necessary secrets (i.e. environment variables) for the Github
 To do this, go to your repo's settings page, then go to the Secrets section. Click the button
 to add a new secret, then create the following environment variables:
 
-`MAC_CODESIGN_IDENTITY`, `MAC_DEV_ID_EMAIL`, `MAC_APP_PASSWORD` - see above for details
-`KEYCHAIN_PASSWORD` - just a password for the build machine to use, set it to whatever you want.
-`MAC_CODESIGN_CERT` - paste the contents of the p12 file into this one.
-`P12_PASSWORD` - enter the password you used for the certificate.
+MAC_CODESIGN_IDENTITY, MAC_DEV_ID_EMAIL, MAC_APP_PASSWORD - see above for details
+KEYCHAIN_PASSWORD: just a password for the build machine to use, set it to whatever you want.
+MAC_CODESIGN_CERT: paste the contents of the p12 file into this one.
+P12_PASSWORD: enter the password you used when creating the certificate.
+
+Step 3: Add a .yml with the Github action for building. An example can
+be found here:
+
+https://github.com/kollivier/brightwriter/blob/develop/.github/workflows/python-app.yml
