@@ -4,8 +4,8 @@ Python App Distribution on macOS
 For various reasons, the Python situation on macOS has gotten somewhat...
 complicated. This XKCD comic sums it up pretty nicely:
 
-.. image::https://imgs.xkcd.com/comics/python_environment_2x.png
-   :target:https://xkcd.com/1987/
+.. image:: https://imgs.xkcd.com/comics/python_environment_2x.png
+   :target: https://xkcd.com/1987/
 
 When you're attempting macOS python app packaging and distribution,
 there are some things that are important to know:
