@@ -39,7 +39,7 @@ using the following command:
 
 ::
 
-    xcrun altool --list-providers -u $MAC_DEV_ID_EMAIL -p $MAC_APP_PASSWORD`
+    xcrun altool --list-providers -u $MAC_DEV_ID_EMAIL -p $MAC_APP_PASSWORD
 
 Once you've found the correct notarization provider, create a MAC_NOTARIZATION_PROVIDER secret with that as the value.
 
