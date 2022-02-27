@@ -1,29 +1,29 @@
-Overview
-********
+Why PyEverywhere?
+*****************
 
-PyEverywhere lets you generate Python applications for deployment on major
-desktop and mobile platforms. To speed cross-platform development, it uses
-HTML for the UI with a bridge layer for passing messages back and forth
-between the UI and the app.
-
-Consider the HTML UI the view layer of your application, while Python provides
-the controller and model sections. 
+PyEverywhere aims to make it easier to create and deploy truly cross-platform desktop
+(Win, Linux, and Mac) and mobile (Android and iOS) applications written using Python.
 
 Features
-========
+=============
 
-* KISS (Keep it Simple, Smarty!). Our priority is on easy to understand and easy to maintain code.
-  For you, that means less potential for bugs and more leveraging of existing tools that are battle-tested
-* Because PyEverywhere is built on top of Pythonista (iOS), Kivy (Android), and wxPython (Linux/Mac/Win),
-  you can use their APIs to add platform-specific UI or functionality.
+* Provides commands for building, packaging, and deploying Python apps on Win, Linux, Mac, Android and iOS
+* Provides a thin UI abstraction layer for building Python applications that use a Web UI (e.g. web apps)
+
+Design Philosophy
+==================
+
+* KISS (Keep it Simple, Stupid!). PyEverywhere aims to solve the most common pain points of
+  cross-platform app building and packaging. It is not trying to replace Apache Cordova.
+
+* Native-when-needed. Because PyEverywhere is built on top of Pythonista (iOS), Kivy (Android),
+  and wxPython (Linux/Mac/Win), you can use their APIs to add platform-specific UI or
+  functionality as needed.
+
 * Full HTML5 support. On all platforms, PyEverywhere uses either WebKit or Chromium, leveraging their HTML5 support.
-* BYOWF (Bring Your Own Web Framework). You are free to use whatever JS frameworks, libraries, or templating tools you wish
-  to run your app. Django? Flask? Your own custom layer? No problem.
-* Test your UI in the browser directly to leverage teh native debugging tools.
-* Unit and functional test support. Using :class:`pew.PEWTestCase`, you can automate UI interaction and
-  test that the application performs as expected. The project template includes a working example of this
-* Support for third-party Python modules. You can add pure Python third-party modules to your app, along with
-  some C++ library Python wrappers. More will continue to be added!
+
+* BYOB (Bring Your Own Backend). Like using wxPython/PyQT for your GUI? Go ahead. Want to package
+  up desktop version of a Django web app? No problem.
 
 Basic Workflow
 ==============

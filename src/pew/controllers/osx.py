@@ -172,27 +172,17 @@ class OSXBuildController(BaseBuildController):
                 print("and MAC_APP_PASSWORD environment variables in order to codesign the build.")
                 sys.exit(1)
             bundle_id = self.project_info['identifier']
-            app = os.path.basename(self.get_app_path())
-            zip = '{}.zip'.format(app)
+            dmg = self.get_dmg_path()
 
-            os.chdir("dist/osx")
-            assert os.path.exists(app), "You need to build an app to be notarized first."
-
-            if os.path.exists(zip):
-                os.remove(zip)
-
-            cmd = ['zip', '-yr', zip, app]
-            subprocess.call(cmd)
-
-            assert os.path.exists(zip), "You need to build an app to be notarized first."
+            assert os.path.exists(dmg), f"No disk image found at {dmg}. Please double-check that packaging succeeded."
 
             cmd = [
                 "xcrun", "altool", "--notarize-app",
-                "--file", zip,
+                "--file", dmg,
                 "--type", "osx",
                 "--username", dev_email,
                 "--primary-bundle-id", bundle_id,
-                "--output-format", "xml",
+                "--output-format", "json",
             ]
 
             cmd.extend(['--password', dev_pass])
@@ -200,49 +190,89 @@ class OSXBuildController(BaseBuildController):
                 cmd.extend(['--asc-provider', mac_notarization_provider])
             print("Uploading app for notarization, this may take a while...")
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            notarization_plist = os.path.join(temp_dir, 'notarization.plist')
+            notarization_info = {}
             if result.stdout:
-                f = open(notarization_plist, 'wb')
-                f.write(result.stdout)
-                f.close()
+                notarization_info = json.loads(result.stdout.decode('utf-8'))
 
             print("Upload for notarization successful.")
             if result.returncode == 0 and self.args.wait:
+                wait_timeout = 600
+                wait_time = 0
                 print("Waiting on notarization result, this may take some time...")
-                plist_buddy = '/usr/libexec/PlistBuddy'
                 notarization_result = None
-                request_uuid = subprocess.check_output([plist_buddy, '-c', 'Print notarization-upload:RequestUUID', notarization_plist])
-                while not notarization_result:
+                status = "Unknown"
+                error_retries = 0
+                request_uuid = notarization_info['notarization-upload']['RequestUUID']
+                while notarization_result is None:
+                    if wait_time > wait_timeout:
+                        notarization_result = "Timed out"
+                        break
+
                     cmd = ['xcrun', 'altool', '--notarization-info',
                            request_uuid, '-u', dev_email, '-p', dev_pass,
-                           '--output-format', 'xml']
+                           '--output-format', 'json']
                     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                    if result.returncode == 0:
-                        status_plist = os.path.join(temp_dir, 'notarization_status.plist')
-                        if result.stdout:
-                            f = open(status_plist, 'wb')
-                            f.write(result.stdout)
-                            f.close()
+                    # This command may sporadically fail, so retry it a couple times before bailing.
+                    if result.returncode != 0:
+                        if error_retries < 5:
+                            print(f"Get info command has failed {error_retries} times. Retrying command in 15 seconds...")
+                            time.sleep(15)
+                            wait_time += 15
+                            error_retries += 1
+                            continue
+                        else:
+                            notarization_result = "Unknown"
+                            break
 
-                        status = subprocess.check_output(
-                            [plist_buddy, '-c', 'Print notarization-info:Status', status_plist])
-                        status = status.decode('utf-8').strip()
+                    if result.stdout:
+                        notarization_status = json.loads(result.stdout.decode('utf-8'))
+
+                        status = notarization_status['notarization-info']['Status']
+                        print(f"Current notarization status = '{status}'")
                         if status == 'in progress':
+                            print("Checking again in 10 seconds...")
                             time.sleep(10)
+                            wait_time += 10
                         else:
                             notarization_result = status
+                    else:
+                        print("No stdout output for notarization status call?")
+                        notarization_result = "unknown"
 
-                if status == 'success':
-                    print("Stapling notarization to app.")
-                    subprocess.call(['xcrun', 'stapler', 'staple', app])
                 print(f"Notarization result: {notarization_result}")
+                if notarization_result == 'success':
+                    print("Stapling notarization to app.")
+                    subprocess.call(['xcrun', 'stapler', 'staple', dmg])
+                else:
+                    print("Notarization failed. For more inforation, run the following command and visit the URL it returns:")
+                    print(f'xcrun altool --notarization-info {request_uuid} -u $MAC_DEV_ID_EMAIL -p $MAC_APP_PASSWORD')
+                    return 1
             elif result.returncode != 0:
-                print(result.stdout)
+                print("Attempt to notarize software failed. The following error was reported")
+                if notarization_info and 'product-errors' in notarization_info:
+                    for error in notarization_info['product-errors']:
+                        print(error['message'])
+                else:
+                    print(result.stdout)
 
         finally:
             shutil.rmtree(temp_dir)
 
         return result.returncode
+
+    def get_dmg_path(self):
+        version = self.project_info['version']
+        full_app_name = '{}-{}'.format(self.project_info['name'], version)
+        path_name = full_app_name.replace(" ", "_").lower()
+
+        if 'disk_image' in self.project_info:
+            if 'filename' in self.project_info['disk_image']:
+                path_name = self.project_info['disk_image']['filename']
+
+        if 'build_number' in self.project_info:
+            path_name += '-build{}'.format(self.project_info['build_number'])
+
+        return os.path.join(self.get_package_dir(), '{}.dmg'.format(path_name))
 
     def dist(self):
         if not os.path.exists(self.get_app_path()):
@@ -250,26 +280,21 @@ class OSXBuildController(BaseBuildController):
             sys.exit(1)
         settings_file = self._create_dmgbuild_settings_file()
 
-        version = self.project_info['version']
-        full_app_name = '{}-{}'.format(self.project_info['name'], version)
-        path_name = full_app_name.replace(" ", "_").lower()
+        output_path = self.get_dmg_path()
+
+        full_app_name = os.path.splitext(os.path.basename(output_path))[0].replace('_', ' ')
 
         if 'disk_image' in self.project_info:
             if 'volume_name' in self.project_info['disk_image']:
                 full_app_name = self.project_info['disk_image']['volume_name']
 
-            if 'filename' in self.project_info['disk_image']:
-                path_name = self.project_info['disk_image']['filename']
-
-        if 'build_number' in self.project_info:
-            path_name += '-build{}'.format(self.project_info['build_number'])
-
-        output_path = os.path.join(self.get_package_dir(), '{}.dmg'.format(path_name))
         if os.path.exists(output_path):
             os.remove(output_path)
         # dmgbuild is a Python script, so we need to run it using the python executable.
         dmgbuild_cmd = ['dmgbuild', '-s', settings_file, full_app_name, output_path]
-        self.run_cmd(dmgbuild_cmd)
+        result = self.run_cmd(dmgbuild_cmd)
+        assert os.path.exists(output_path)
+        return result
 
     def get_platform_data_files(self):
         return []
