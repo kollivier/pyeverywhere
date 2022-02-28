@@ -326,9 +326,16 @@ class BaseBuildController:
             import cefpython3
             this_dir = os.path.dirname(os.path.abspath(__file__))
             src_dir = os.path.join(os.getcwd())
-            this_dir_rel = os.path.relpath(this_dir, src_dir)
             # PyInstaller expects hook dirs to be relative to the CWD, not absolute paths.
-            cmd.append('--additional-hooks-dir={}'.format(os.path.join(this_dir_rel, 'files', 'hooks')))
+            hooks_dirs = [os.path.join(this_dir, 'files', 'hooks')]
+
+            if 'pyinstaller' in self.project_info and 'hooks_dirs' in self.project_info['pyinstaller']:
+                hooks_dirs.extend(self.project_info['pyinstaller']['hooks_dirs'])
+
+            for hook_dir in hooks_dirs:
+                # PyInstaller expects hook dirs to be relative to the CWD, not absolute paths.
+                this_dir_rel = os.path.relpath(hook_dir, src_dir)
+                cmd.append('--additional-hooks-dir={}'.format(this_dir_rel))
         except:
             logging.info("Could not find CEFPython, so not installing hook.")
             pass
